@@ -365,7 +365,7 @@ const controls = {
         const attributes = utils.getAttributesFromSelector(this.config.selectors.display[type]);
 
         const container = utils.createElement('div', utils.extend(attributes, {
-            class: `plyr__time ${attributes.class}`,
+            class: `ggs-plyr__time ${attributes.class}`,
             'aria-label': i18n.get(type, this.config),
         }), '00:00');
 
@@ -387,10 +387,10 @@ const controls = {
             'input',
             utils.extend(utils.getAttributesFromSelector(this.config.selectors.inputs[type]), {
                 type: 'radio',
-                name: `plyr-${type}`,
+                name: `ggs-plyr-${type}`,
                 value,
                 checked,
-                class: 'plyr__sr-only',
+                class: 'ggs-plyr__sr-only',
             }),
         );
 
@@ -1132,7 +1132,7 @@ const controls = {
 
             // Seek range slider
             const seek = controls.createRange.call(this, 'seek', {
-                id: `plyr-seek-${data.id}`,
+                id: `ggs-plyr-seek-${data.id}`,
             });
             progress.appendChild(seek.label);
             progress.appendChild(seek.input);
@@ -1178,7 +1178,7 @@ const controls = {
         // Volume range control
         if (this.config.controls.includes('volume')) {
             const volume = utils.createElement('div', {
-                class: 'plyr__volume',
+                class: 'ggs-plyr__volume',
             });
 
             // Set the attributes
@@ -1193,7 +1193,7 @@ const controls = {
                 this,
                 'volume',
                 utils.extend(attributes, {
-                    id: `plyr-volume-${data.id}`,
+                    id: `ggs-plyr-volume-${data.id}`,
                 }),
             );
             volume.appendChild(range.label);
@@ -1212,24 +1212,24 @@ const controls = {
         // Settings button / menu
         if (this.config.controls.includes('settings') && !utils.is.empty(this.config.settings)) {
             const menu = utils.createElement('div', {
-                class: 'plyr__menu',
+                class: 'ggs-plyr__menu',
                 hidden: '',
             });
 
             menu.appendChild(
                 controls.createButton.call(this, 'settings', {
-                    id: `plyr-settings-toggle-${data.id}`,
+                    id: `ggs-plyr-settings-toggle-${data.id}`,
                     'aria-haspopup': true,
-                    'aria-controls': `plyr-settings-${data.id}`,
+                    'aria-controls': `ggs-plyr-settings-${data.id}`,
                     'aria-expanded': false,
                 }),
             );
 
             const form = utils.createElement('form', {
-                class: 'plyr__menu__container',
-                id: `plyr-settings-${data.id}`,
+                class: 'ggs-plyr__menu__container',
+                id: `ggs-plyr-settings-${data.id}`,
                 hidden: '',
-                'aria-labelled-by': `plyr-settings-toggle-${data.id}`,
+                'aria-labelled-by': `ggs-plyr-settings-toggle-${data.id}`,
                 role: 'tablist',
                 tabindex: -1,
             });
@@ -1237,8 +1237,8 @@ const controls = {
             const inner = utils.createElement('div');
 
             const home = utils.createElement('div', {
-                id: `plyr-settings-${data.id}-home`,
-                'aria-labelled-by': `plyr-settings-toggle-${data.id}`,
+                id: `ggs-plyr-settings-${data.id}-home`,
+                'aria-labelled-by': `ggs-plyr-settings-toggle-${data.id}`,
                 role: 'tabpanel',
             });
 
@@ -1259,9 +1259,9 @@ const controls = {
                     utils.extend(utils.getAttributesFromSelector(this.config.selectors.buttons.settings), {
                         type: 'button',
                         class: `${this.config.classNames.control} ${this.config.classNames.control}--forward`,
-                        id: `plyr-settings-${data.id}-${type}-tab`,
+                        id: `ggs-plyr-settings-${data.id}-${type}-tab`,
                         'aria-haspopup': true,
-                        'aria-controls': `plyr-settings-${data.id}-${type}`,
+                        'aria-controls': `ggs-plyr-settings-${data.id}-${type}`,
                         'aria-expanded': false,
                     }),
                     i18n.get(type, this.config),
@@ -1287,9 +1287,9 @@ const controls = {
             // Build the panes
             this.config.settings.forEach(type => {
                 const pane = utils.createElement('div', {
-                    id: `plyr-settings-${data.id}-${type}`,
+                    id: `ggs-plyr-settings-${data.id}-${type}`,
                     hidden: '',
-                    'aria-labelled-by': `plyr-settings-${data.id}-${type}-tab`,
+                    'aria-labelled-by': `ggs-plyr-settings-${data.id}-${type}-tab`,
                     role: 'tabpanel',
                     tabindex: -1,
                 });
@@ -1300,7 +1300,7 @@ const controls = {
                         type: 'button',
                         class: `${this.config.classNames.control} ${this.config.classNames.control}--back`,
                         'aria-haspopup': true,
-                        'aria-controls': `plyr-settings-${data.id}-home`,
+                        'aria-controls': `ggs-plyr-settings-${data.id}-home`,
                         'aria-expanded': false,
                     },
                     i18n.get(type, this.config),
