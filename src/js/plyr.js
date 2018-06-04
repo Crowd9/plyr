@@ -1018,7 +1018,7 @@ class Plyr {
 
         const done = () => {
             // Reset overflow (incase destroyed while in fullscreen)
-            document.body.style.overflow = '';
+            document.body.style.setProperty('overflow', '');
 
             // GC for embed
             this.embed = null;

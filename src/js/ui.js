@@ -174,12 +174,8 @@ const ui = {
         // Load the image, and set poster if successful
         const loadPromise = utils.loadImage(poster)
             .then(() => {
-                this.elements.poster.style.backgroundImage = `url('${poster}')`;
-                Object.assign(this.elements.poster.style, {
-                    backgroundImage: `url('${poster}')`,
-                    // Reset backgroundSize as well (since it can be set to "cover" for padded thumbnails for youtube)
-                    backgroundSize: '',
-                });
+                this.elements.poster.style.setProperty('background-image', `url('${poster}')`, 'important');
+                this.elements.poster.style.setProperty('background-size', '')
                 ui.togglePoster.call(this, true);
                 return poster;
             });

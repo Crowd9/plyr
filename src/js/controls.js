@@ -523,7 +523,7 @@ const controls = {
         }
 
         // Set CSS custom property
-        range.style.setProperty('--value', `${range.value / range.max * 100}%`);
+        range.style.setProperty('--value', `${range.value / range.max * 100}%`, 'important');
     },
 
     // Update hover tooltip for seeking
@@ -573,7 +573,7 @@ const controls = {
         controls.updateTimeDisplay.call(this, this.elements.display.seekTooltip, this.duration / 100 * percent);
 
         // Set position
-        this.elements.display.seekTooltip.style.left = `${percent}%`;
+        this.elements.display.seekTooltip.style.setProperty('left', `${percent}%`, 'important');
 
         // Show/hide the tooltip
         // If the event is a moues in/out and percentage is inside bounds
@@ -991,8 +991,8 @@ const controls = {
     // Get the natural size of a tab
     getTabSize(tab) {
         const clone = tab.cloneNode(true);
-        clone.style.position = 'absolute';
-        clone.style.opacity = 0;
+        clone.style.setProperty('position', 'absolute', 'important');
+        clone.style.setProperty('opacity', 0, 'important');
         clone.removeAttribute('hidden');
 
         // Prevent input's being unchecked due to the name being identical
@@ -1046,8 +1046,8 @@ const controls = {
         // If we can do fancy animations, we'll animate the height/width
         if (support.transitions && !support.reducedMotion) {
             // Set the current width as a base
-            container.style.width = `${current.scrollWidth}px`;
-            container.style.height = `${current.scrollHeight}px`;
+            container.style.setProperty('width', `${current.scrollWidth}px`, 'important');
+            container.style.setProperty('height', `${current.scrollHeight}px`, 'important');
 
             // Get potential sizes
             const size = controls.getTabSize.call(this, pane);
@@ -1063,8 +1063,8 @@ const controls = {
                 }
 
                 // Revert back to auto
-                container.style.width = '';
-                container.style.height = '';
+                container.style.setProperty('width', '');
+                container.style.setProperty('height', '');
 
                 // Only listen once
                 utils.off(container, utils.transitionEndEvent, restore);
@@ -1074,8 +1074,8 @@ const controls = {
             utils.on(container, utils.transitionEndEvent, restore);
 
             // Set dimensions to target
-            container.style.width = `${size.width}px`;
-            container.style.height = `${size.height}px`;
+            container.style.setProperty('width', `${size.width}px`, 'important');
+            container.style.setProperty('height', `${size.height}px`, 'important');
         }
 
         // Set attributes on current tab
