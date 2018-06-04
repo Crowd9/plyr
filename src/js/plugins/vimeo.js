@@ -72,13 +72,13 @@ const vimeo = {
     setAspectRatio(input) {
         const [x, y] = (is.string(input) ? input : this.config.ratio).split(':');
         const padding = 100 / x * y;
-        this.elements.wrapper.style.paddingBottom = `${padding}%`;
+        this.elements.wrapper.style.setProperty('padding-bottom', `${padding}%`, 'important');
 
         if (this.supported.ui) {
             const height = 240;
             const offset = (height - padding) / (height / 50);
 
-            this.media.style.transform = `translateY(-${offset}%)`;
+            this.media.style.setProperty('transform', `translateY(-${offset}%)`, 'important');
         }
     },
 

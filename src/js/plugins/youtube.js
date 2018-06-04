@@ -134,7 +134,7 @@ const youtube = {
     // Set aspect ratio
     setAspectRatio() {
         const ratio = this.config.ratio.split(':');
-        this.elements.wrapper.style.paddingBottom = `${100 / ratio[0] * ratio[1]}%`;
+        this.elements.wrapper.style.setProperty('padding-bottom', `${100 / ratio[0] * ratio[1]}%`, 'important');
     },
 
     // API ready
@@ -177,7 +177,7 @@ const youtube = {
             .then(posterSrc => {
                 // If the image is padded, use background-size "cover" instead (like youtube does too with their posters)
                 if (!posterSrc.includes('maxres')) {
-                    player.elements.poster.style.backgroundSize = 'cover';
+                    player.elements.poster.style.setProperty('background-size', 'cover', 'important');
                 }
             })
             .catch(() => {});

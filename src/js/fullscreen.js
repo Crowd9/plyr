@@ -40,7 +40,9 @@ function toggleFallback(toggle = false) {
     }
 
     // Toggle scroll
-    document.body.style.overflow = toggle ? 'hidden' : '';
+    toggle
+        ? document.body.style.setProperty('overflow', 'hidden', 'important')
+        : document.body.style.setProperty('overflow', '');
 
     // Toggle class hook
     toggleClass(this.target, this.player.config.classNames.fullscreen.fallback, toggle);
