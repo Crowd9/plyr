@@ -16,6 +16,10 @@ const captions = {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
         // Only Vimeo and HTML5 video supported at this point
         if (!this.isVideo || this.isYouTube || (this.isHTML5 && !support.textTracks)) {
             // Clear menu and hide
@@ -82,6 +86,10 @@ const captions = {
     },
 
     update() {
+        if (!this.elements) {
+            return;
+        }
+
         // Update tracks
         const tracks = captions.getTracks.call(this);
         this.options.captions = tracks.map(({language}) => language);
@@ -220,6 +228,10 @@ const captions = {
     setText(input) {
         // Requires UI
         if (!this.supported.ui) {
+            return;
+        }
+
+        if (!this.elements) {
             return;
         }
 

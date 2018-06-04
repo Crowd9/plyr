@@ -12,6 +12,10 @@ function onChange() {
         return;
     }
 
+    if (!this.player.elements) {
+        return;
+    }
+
     // Update toggle button
     const button = this.player.elements.buttons.fullscreen;
     if (utils.is.element(button)) {
@@ -41,7 +45,7 @@ function toggleFallback(toggle = false) {
     // Toggle scroll
     toggle
         ? document.body.style.setProperty('overflow', 'hidden', 'important')
-        : document.body.style.setProperty('overflow', '')
+        : document.body.style.setProperty('overflow', '');
 
     // Toggle class hook
     utils.toggleClass(this.target, this.player.config.classNames.fullscreen.fallback, toggle);
@@ -54,6 +58,10 @@ class Fullscreen {
     constructor(player) {
         // Keep reference to parent
         this.player = player;
+
+        if (!this.player.elements) {
+            return;
+        }
 
         // Get prefix
         this.prefix = Fullscreen.prefix;
@@ -71,6 +79,10 @@ class Fullscreen {
 
         // Fullscreen toggle on double click
         utils.on(this.player.elements.container, 'dblclick', event => {
+            if (!this.player.elements) {
+                return;
+            }
+
             // Ignore double click in controls
             if (utils.is.element(this.player.elements.controls) && this.player.elements.controls.contains(event.target)) {
                 return;
@@ -147,6 +159,10 @@ class Fullscreen {
 
     // Get target element
     get target() {
+        if (!this.player.elements) {
+            return this.player.media;
+        }
+
         return browser.isIos && this.player.config.fullscreen.iosNative ? this.player.media : this.player.elements.container;
     }
 
@@ -156,6 +172,10 @@ class Fullscreen {
             this.player.debug.log(`${Fullscreen.native ? 'Native' : 'Fallback'} fullscreen enabled`);
         } else {
             this.player.debug.log('Fullscreen not supported and fallback disabled');
+        }
+
+        if (!this.player.elements) {
+            return;
         }
 
         // Add styling hook to show button

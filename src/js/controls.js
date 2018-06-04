@@ -29,6 +29,10 @@ const controls = {
     // TODO: Allow settings menus with custom controls
     findElements() {
         try {
+            if (!this.elements) {
+                return false;
+            }
+
             this.elements.controls = utils.getElement.call(this, this.config.selectors.controls.wrapper);
 
             // Buttons
@@ -167,6 +171,11 @@ const controls = {
     // Create a <button>
     createButton(buttonType, attr) {
         const button = utils.createElement('button');
+
+        if (!this.elements) {
+            return button;
+        }
+
         const attributes = Object.assign({}, attr);
         let type = utils.toCamelCase(buttonType);
 
@@ -272,6 +281,15 @@ const controls = {
 
     // Create an <input type='range'>
     createRange(type, attributes) {
+        if (!this.elements) {
+            const label = utils.createElement('label');
+            const input = utils.createElement('input');
+            return {
+                label,
+                input,
+            };
+        }
+
         // Seek label
         const label = utils.createElement(
             'label',
@@ -319,6 +337,11 @@ const controls = {
 
     // Create a <progress>
     createProgress(type, attributes) {
+        if (!this.elements) {
+            const progress = utils.createElement('progress');
+            return progress;
+        }
+
         const progress = utils.createElement(
             'progress',
             utils.extend(
@@ -362,6 +385,11 @@ const controls = {
 
     // Create time display
     createTime(type) {
+        if (!this.elements) {
+            const container = utils.createElement('div');
+            return container;
+        }
+
         const attributes = utils.getAttributesFromSelector(this.config.selectors.display[type]);
 
         const container = utils.createElement('div', utils.extend(attributes, {
@@ -428,6 +456,10 @@ const controls = {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
         // Update range
         if (utils.is.element(this.elements.inputs.volume)) {
             controls.setRange.call(this, this.elements.inputs.volume, this.muted ? 0 : this.volume);
@@ -458,9 +490,17 @@ const controls = {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
         let value = 0;
 
         const setProgress = (target, input) => {
+            if (!this.elements) {
+                return;
+            }
+
             const value = utils.is.number(input) ? input : 0;
             const progress = utils.is.element(target) ? target : this.elements.display.buffer;
 
@@ -528,6 +568,10 @@ const controls = {
 
     // Update hover tooltip for seeking
     updateSeekTooltip(event) {
+        if (!this.elements) {
+            return;
+        }
+
         // Bail if setting not true
         if (
             !this.config.tooltips.seek ||
@@ -587,6 +631,10 @@ const controls = {
 
     // Handle time change event
     timeUpdate(event) {
+        if (!this.elements) {
+            return;
+        }
+
         // Only invert if only one time element is displayed and used for both duration and currentTime
         const invert = !utils.is.element(this.elements.display.duration) && this.config.invertTime;
 
@@ -609,6 +657,10 @@ const controls = {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
         // If there's a spot to display duration
         const hasDuration = utils.is.element(this.elements.display.duration);
 
@@ -628,6 +680,10 @@ const controls = {
 
     // Hide/show a tab
     toggleTab(setting, toggle) {
+        if (!this.elements) {
+            return;
+        }
+
         utils.toggleHidden(this.elements.settings.tabs[setting], !toggle);
     },
 
@@ -716,6 +772,10 @@ const controls = {
 
     // Update the selected setting
     updateSetting(setting, container, input) {
+        if (!this.elements) {
+            return;
+        }
+
         const pane = this.elements.settings.panes[setting];
         let value = null;
         let list = container;
@@ -828,6 +888,10 @@ const controls = {
 
     // Set a list of available captions languages
     setCaptionsMenu() {
+        if (!this.elements) {
+            return;
+        }
+
         // TODO: Captions or language? Currently it's mixed
         const type = 'captions';
         const list = this.elements.settings.panes.captions.querySelector('ul');
@@ -877,6 +941,10 @@ const controls = {
 
     // Set a list of available captions languages
     setSpeedMenu(options) {
+        if (!this.elements) {
+            return;
+        }
+
         // Do nothing if not selected
         if (!this.config.controls.includes('settings') || !this.config.settings.includes('speed')) {
             return;
@@ -936,6 +1004,10 @@ const controls = {
 
     // Check if we need to hide/show the settings menu
     checkMenu() {
+        if (!this.elements) {
+            return;
+        }
+
         const { tabs } = this.elements.settings;
         const visible = !utils.is.empty(tabs) && Object.values(tabs).some(tab => !tab.hidden);
 
@@ -944,6 +1016,10 @@ const controls = {
 
     // Show/hide menu
     toggleMenu(event) {
+        if (!this.elements) {
+            return;
+        }
+
         const { form } = this.elements.settings;
         const button = this.elements.buttons.settings;
 
@@ -1019,6 +1095,10 @@ const controls = {
 
     // Toggle Menu
     showTab(target = '') {
+        if (!this.elements) {
+            return;
+        }
+
         const { menu } = this.elements.settings;
         const pane = document.getElementById(target);
 
@@ -1098,6 +1178,10 @@ const controls = {
     // Build the default HTML
     // TODO: Set order based on order in the config.controls array?
     create(data) {
+        if (!this.elements) {
+            return null;
+        }
+
         // Do nothing if we want no controls
         if (utils.is.empty(this.config.controls)) {
             return null;
@@ -1249,6 +1333,10 @@ const controls = {
 
             // Build the tabs
             this.config.settings.forEach(type => {
+                if (!this.elements) {
+                    return;
+                }
+
                 const tab = utils.createElement('li', {
                     role: 'tab',
                     hidden: '',
@@ -1286,6 +1374,10 @@ const controls = {
 
             // Build the panes
             this.config.settings.forEach(type => {
+                if (!this.elements) {
+                    return;
+                }
+
                 const pane = utils.createElement('div', {
                     id: `ggs-plyr-settings-${data.id}-${type}`,
                     hidden: '',
@@ -1357,6 +1449,10 @@ const controls = {
 
     // Insert controls
     inject() {
+        if (!this.elements) {
+            return;
+        }
+
         // Sprite
         if (this.config.loadSprite) {
             const icon = controls.getIconUrl.call(this);

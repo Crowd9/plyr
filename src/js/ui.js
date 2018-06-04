@@ -13,6 +13,9 @@ const browser = utils.getBrowser();
 
 const ui = {
     addStyleHook() {
+        if (!this.elements) {
+            return;
+        }
         utils.toggleClass(this.elements.container, this.config.selectors.container.replace('.', ''), true);
         utils.toggleClass(this.elements.container, this.config.classNames.uiSupported, this.supported.ui);
     },
@@ -28,6 +31,9 @@ const ui = {
 
     // Setup the UI
     build() {
+        if (!this.elements) {
+            return;
+        }
         // Re-attach media element listeners
         // TODO: Use event bubbling?
         this.listeners.media();
@@ -121,6 +127,9 @@ const ui = {
 
     // Setup aria attribute for play and iframe title
     setTitle() {
+        if (!this.elements) {
+            return;
+        }
         // Find the current text
         let label = i18n.get('play', this.config);
 
@@ -158,11 +167,17 @@ const ui = {
 
     // Toggle poster
     togglePoster(enable) {
+        if (!this.elements) {
+            return;
+        }
         utils.toggleClass(this.elements.container, this.config.classNames.posterEnabled, enable);
     },
 
     // Set the poster image (async)
     setPoster(poster) {
+        if (!this.elements) {
+            return Promise.reject();
+        }
         // Set property regardless of validity
         this.media.setAttribute('poster', poster);
 
@@ -175,7 +190,7 @@ const ui = {
         const loadPromise = utils.loadImage(poster)
             .then(() => {
                 this.elements.poster.style.setProperty('background-image', `url('${poster}')`, 'important');
-                this.elements.poster.style.setProperty('background-size', '')
+                this.elements.poster.style.setProperty('background-size', '');
                 ui.togglePoster.call(this, true);
                 return poster;
             });
@@ -189,6 +204,10 @@ const ui = {
 
     // Check playing state
     checkPlaying(event) {
+        if (!this.elements) {
+            return;
+        }
+
         // Class hooks
         utils.toggleClass(this.elements.container, this.config.classNames.playing, this.playing);
         utils.toggleClass(this.elements.container, this.config.classNames.paused, this.paused);
@@ -218,6 +237,10 @@ const ui = {
 
         // Timer to prevent flicker when seeking
         this.timers.loading = setTimeout(() => {
+            if (!this.elements) {
+                return;
+            }
+
             // Update progress bar loading class state
             utils.toggleClass(this.elements.container, this.config.classNames.loading, this.loading);
 
@@ -228,6 +251,9 @@ const ui = {
 
     // Toggle controls based on state and `force` argument
     toggleControls(force) {
+        if (!this.elements) {
+            return;
+        }
         const { controls } = this.elements;
 
         if (controls && this.config.hideControls) {

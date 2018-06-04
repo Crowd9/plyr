@@ -837,6 +837,10 @@ class Plyr {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
         // If the method is called without parameter, toggle based on current value
         const active = utils.is.boolean(input) ? input : !this.elements.container.classList.contains(this.config.classNames.captions.active);
 
@@ -961,6 +965,10 @@ class Plyr {
      * @param {boolean} [toggle] - Whether to show the controls
      */
     toggleControls(toggle) {
+        if (!this.elements) {
+            return false;
+        }
+
         // Don't toggle if missing UI support or if it's audio
         if (this.supported.ui && !this.isAudio) {
             // Get state before change
@@ -992,6 +1000,10 @@ class Plyr {
      * @param {function} callback - Callback for when event occurs
      */
     on(event, callback) {
+        if (!this.elements) {
+            return;
+        }
+
         utils.on(this.elements.container, event, callback);
     }
 
@@ -1001,6 +1013,10 @@ class Plyr {
      * @param {function} callback - Callback for when event occurs
      */
     off(event, callback) {
+        if (!this.elements) {
+            return;
+        }
+
         utils.off(this.elements.container, event, callback);
     }
 

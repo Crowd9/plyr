@@ -38,6 +38,10 @@ const source = {
         this.destroy.call(
             this,
             () => {
+                if (!this.elements) {
+                    return;
+                }
+
                 // Reset quality options
                 this.options.quality = [];
 

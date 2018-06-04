@@ -189,6 +189,10 @@ class Listeners {
 
     // Device is touch enabled
     firstTouch() {
+        if (!this.player.elements) {
+            return;
+        }
+
         this.player.touch = true;
 
         // Add touch class
@@ -214,6 +218,10 @@ class Listeners {
 
     // Container listeners
     container() {
+        if (!this.player.elements) {
+            return;
+        }
+
         // Keyboard shortcuts
         if (!this.player.config.keyboard.global && this.player.config.keyboard.focused) {
             utils.on(this.player.elements.container, 'keydown keyup', this.handleKey, false);
@@ -240,6 +248,10 @@ class Listeners {
 
         // Toggle controls on mouse events and entering fullscreen
         utils.on(this.player.elements.container, 'mousemove mouseleave touchstart touchmove enterfullscreen exitfullscreen', event => {
+            if (!this.player.elements) {
+                return;
+            }
+
             const { controls } = this.player.elements;
 
             // Remove button states for fullscreen
@@ -272,6 +284,10 @@ class Listeners {
 
     // Listen for media events
     media() {
+        if (!this.player.elements) {
+            return;
+        }
+
         // Time change on media
         utils.on(this.player.media, 'timeupdate seeking seeked', event => controls.timeUpdate.call(this.player, event));
 
@@ -281,6 +297,9 @@ class Listeners {
         // Check for audio tracks on load
         // We can't use `loadedmetadata` as it doesn't seem to have audio tracks at that point
         utils.on(this.player.media, 'loadeddata', () => {
+            if (!this.player.elements) {
+                return;
+            }
             utils.toggleHidden(this.player.elements.volume, !this.player.hasAudio);
             utils.toggleHidden(this.player.elements.buttons.mute, !this.player.hasAudio);
         });
@@ -411,6 +430,10 @@ class Listeners {
             'keyup',
             'keydown',
         ]).join(' '), event => {
+            if (!this.player.elements) {
+                return;
+            }
+
             let detail = {};
 
             // Get error details from media
@@ -418,12 +441,17 @@ class Listeners {
                 detail = this.player.media.error;
             }
 
+
             utils.dispatchEvent.call(this.player, this.player.elements.container, event.type, true, detail);
         });
     }
 
     // Listen for control events
     controls() {
+        if (!this.player.elements) {
+            return;
+        }
+
         // IE doesn't support input event, so we fallback to change
         const inputEvent = browser.isIE ? 'change' : 'input';
 
@@ -638,11 +666,18 @@ class Listeners {
 
         // Update controls.hover state (used for ui.toggleControls to avoid hiding when interacting)
         on(this.player.elements.controls, 'mouseenter mouseleave', event => {
+            if (!this.player.elements) {
+                return;
+            }
+
             this.player.elements.controls.hover = !this.player.touch && event.type === 'mouseenter';
         });
 
         // Update controls.pressed state (used for ui.toggleControls to avoid hiding when interacting)
         on(this.player.elements.controls, 'mousedown mouseup touchstart touchend touchcancel', event => {
+            if (!this.player.elements) {
+                return;
+            }
             this.player.elements.controls.pressed = [
                 'mousedown',
                 'touchstart',

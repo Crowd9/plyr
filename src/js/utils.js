@@ -443,11 +443,17 @@ const utils = {
 
     // Find all elements
     getElements(selector) {
+        if (!this.elements) {
+            return document.querySelectorAll('#youwillneverfindme-oi1io1io991918');
+        }
         return this.elements.container.querySelectorAll(selector);
     },
 
     // Find a single element
     getElement(selector) {
+        if (!this.elements) {
+            return null;
+        }
         return this.elements.container.querySelector(selector);
     },
 
@@ -466,6 +472,9 @@ const utils = {
 
     // Trap focus inside container
     trapFocus(element = null, toggle = false) {
+        if (!this.elements) {
+            return;
+        }
         if (!utils.is.element(element)) {
             return;
         }

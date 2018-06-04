@@ -16,6 +16,10 @@ const media = {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
         // Add type class
         utils.toggleClass(this.elements.container, this.config.classNames.type.replace('{0}', this.type), true);
 
