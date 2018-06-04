@@ -330,6 +330,10 @@ class Plyr {
      * Play the media, or play the advertisement (if they are not blocked)
      */
     play() {
+        if (!this.media) {
+            return null;
+        }
+
         if (!utils.is.function(this.media.play)) {
             return null;
         }
@@ -342,6 +346,10 @@ class Plyr {
      * Pause the media
      */
     pause() {
+        if (!this.media) {
+            return;
+        }
+
         if (!this.playing || !utils.is.function(this.media.pause)) {
             return;
         }
@@ -360,6 +368,10 @@ class Plyr {
      * Get paused state
      */
     get paused() {
+        if (!this.media) {
+            return true;
+        }
+
         return Boolean(this.media.paused);
     }
 
@@ -374,6 +386,10 @@ class Plyr {
      * Get ended state
      */
     get ended() {
+        if (!this.media) {
+            return true;
+        }
+
         return Boolean(this.media.ended);
     }
 
@@ -396,6 +412,10 @@ class Plyr {
      * Stop playback
      */
     stop() {
+        if (!this.media) {
+            return;
+        }
+
         if (this.isHTML5) {
             this.pause();
             this.restart();
@@ -437,6 +457,10 @@ class Plyr {
             return;
         }
 
+        if (!this.media) {
+            return;
+        }
+
         // Validate input
         const inputIsValid = utils.is.number(input) && input > 0;
 
@@ -451,6 +475,10 @@ class Plyr {
      * Get current time
      */
     get currentTime() {
+        if (!this.media) {
+            return 0;
+        }
+
         return Number(this.media.currentTime);
     }
 
@@ -458,6 +486,10 @@ class Plyr {
      * Get buffered
      */
     get buffered() {
+        if (!this.media) {
+            return 0;
+        }
+
         const { buffered } = this.media;
 
         // YouTube / Vimeo return a float between 0-1
@@ -479,6 +511,10 @@ class Plyr {
      * Get seeking status
      */
     get seeking() {
+        if (!this.media) {
+            return false;
+        }
+
         return Boolean(this.media.seeking);
     }
 
@@ -486,6 +522,10 @@ class Plyr {
      * Get the duration of the current media
      */
     get duration() {
+        if (!this.media) {
+            return 0;
+        }
+
         // Faux duration set via config
         const fauxDuration = parseFloat(this.config.duration);
 
@@ -501,6 +541,10 @@ class Plyr {
      * @param {number} value - must be between 0 and 1. Defaults to the value from local storage and config.volume if not set in storage
      */
     set volume(value) {
+        if (!this.media) {
+            return;
+        }
+
         let volume = value;
         const max = 1;
         const min = 0;
@@ -544,6 +588,10 @@ class Plyr {
      * Get the current player volume
      */
     get volume() {
+        if (!this.media) {
+            return 0;
+        }
+
         return Number(this.media.volume);
     }
 
@@ -552,6 +600,10 @@ class Plyr {
      * @param {boolean} step - How much to decrease by (between 0 and 1)
      */
     increaseVolume(step) {
+        if (!this.media) {
+            return;
+        }
+
         const volume = this.media.muted ? 0 : this.volume;
         this.volume = volume + (utils.is.number(step) ? step : 1);
     }
@@ -561,6 +613,10 @@ class Plyr {
      * @param {boolean} step - How much to decrease by (between 0 and 1)
      */
     decreaseVolume(step) {
+        if (!this.media) {
+            return;
+        }
+
         const volume = this.media.muted ? 0 : this.volume;
         this.volume = volume - (utils.is.number(step) ? step : 1);
     }
@@ -570,6 +626,10 @@ class Plyr {
      * @param {boolean} mute
      */
     set muted(mute) {
+        if (!this.media) {
+            return;
+        }
+
         let toggle = mute;
 
         // Load muted state from storage
@@ -593,6 +653,10 @@ class Plyr {
      * Get current muted state
      */
     get muted() {
+        if (!this.media) {
+            return false;
+        }
+
         return Boolean(this.media.muted);
     }
 
@@ -600,6 +664,10 @@ class Plyr {
      * Check if the media has audio
      */
     get hasAudio() {
+        if (!this.media) {
+            return false;
+        }
+
         // Assume yes for all non HTML5 (as we can't tell...)
         if (!this.isHTML5) {
             return true;
@@ -622,6 +690,10 @@ class Plyr {
      * @param {number} speed - the speed of playback (0.5-2.0)
      */
     set speed(input) {
+        if (!this.media) {
+            return;
+        }
+
         let speed = null;
 
         if (utils.is.number(input)) {
@@ -660,6 +732,10 @@ class Plyr {
      * Get current playback speed
      */
     get speed() {
+        if (!this.media) {
+            return 1;
+        }
+
         return Number(this.media.playbackRate);
     }
 
@@ -669,6 +745,10 @@ class Plyr {
      * @param {number} input - Quality level
      */
     set quality(input) {
+        if (!this.media) {
+            return;
+        }
+
         let quality = null;
 
         if (!utils.is.empty(input)) {
@@ -708,6 +788,10 @@ class Plyr {
      * Get current quality level
      */
     get quality() {
+        if (!this.media) {
+            return this.options.quality[0];
+        }
+
         return this.media.quality;
     }
 
@@ -717,6 +801,10 @@ class Plyr {
      * @param {boolean} input - Whether to loop or not
      */
     set loop(input) {
+        if (!this.media) {
+            return;
+        }
+
         const toggle = utils.is.boolean(input) ? input : this.config.loop.active;
         this.config.loop.active = toggle;
         this.media.loop = toggle;
@@ -769,6 +857,10 @@ class Plyr {
      * Get current loop state
      */
     get loop() {
+        if (!this.media) {
+            return false;
+        }
+
         return Boolean(this.media.loop);
     }
 
@@ -784,6 +876,10 @@ class Plyr {
      * Get current source
      */
     get source() {
+        if (!this.media) {
+            return '';
+        }
+
         return this.media.currentSrc;
     }
 
@@ -804,6 +900,10 @@ class Plyr {
      * Get the current poster image
      */
     get poster() {
+        if (!this.media) {
+            return '';
+        }
+
         if (!this.isVideo) {
             return null;
         }
@@ -841,6 +941,10 @@ class Plyr {
             return;
         }
 
+        if (!this.media) {
+            return;
+        }
+
         // If the method is called without parameter, toggle based on current value
         const active = utils.is.boolean(input) ? input : !this.elements.container.classList.contains(this.config.classNames.captions.active);
 
@@ -862,6 +966,10 @@ class Plyr {
      * @param {string} - Two character ISO language code (e.g. EN, FR, PT, etc)
      */
     set language(input) {
+        if (!this.media) {
+            return;
+        }
+
         // Nothing specified
         if (!utils.is.string(input)) {
             return;
@@ -921,6 +1029,10 @@ class Plyr {
      * TODO: detect outside changes
      */
     set pip(input) {
+        if (!this.media) {
+            return;
+        }
+
         const states = {
             pip: 'picture-in-picture',
             inline: 'inline',
@@ -942,6 +1054,10 @@ class Plyr {
      * Get the current picture-in-picture state
      */
     get pip() {
+        if (!this.media) {
+            return false;
+        }
+
         if (!support.pip) {
             return null;
         }
@@ -954,6 +1070,10 @@ class Plyr {
      * TODO: update player with state, support, enabled
      */
     airplay() {
+        if (!this.media) {
+            return;
+        }
+
         // Show dialog if supported
         if (support.airplay) {
             this.media.webkitShowPlaybackTargetPicker();
@@ -966,6 +1086,10 @@ class Plyr {
      */
     toggleControls(toggle) {
         if (!this.elements) {
+            return false;
+        }
+
+        if (!this.media) {
             return false;
         }
 

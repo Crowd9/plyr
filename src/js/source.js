@@ -12,6 +12,10 @@ import utils from './utils';
 const source = {
     // Add elements to HTML5 media (source, tracks, etc)
     insertElements(type, attributes) {
+        if (!this.media) {
+            return;
+        }
+
         if (utils.is.string(attributes)) {
             utils.insertElement(type, this.media, {
                 src: attributes,

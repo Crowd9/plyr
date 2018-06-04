@@ -11,6 +11,10 @@ const html5 = {
             return null;
         }
 
+        if (!this.media) {
+            return null;
+        }
+
         return this.media.querySelectorAll('source');
     },
 
@@ -46,6 +50,10 @@ const html5 = {
 
         const player = this;
 
+        if (!player.media) {
+            return;
+        }
+
         // Quality
         Object.defineProperty(player.media, 'quality', {
             get() {
@@ -65,6 +73,10 @@ const html5 = {
                 return Number(matches[0].getAttribute('size'));
             },
             set(input) {
+                if (!player.media) {
+                    return;
+                }
+
                 // Get sources
                 const sources = html5.getSources.call(player);
 
@@ -126,6 +138,10 @@ const html5 = {
     // See https://github.com/sampotts/plyr/issues/174
     cancelRequests() {
         if (!this.isHTML5) {
+            return;
+        }
+
+        if (!this.media) {
             return;
         }
 

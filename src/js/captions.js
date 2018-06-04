@@ -20,6 +20,10 @@ const captions = {
             return;
         }
 
+        if (!this.media) {
+            return;
+        }
+
         // Only Vimeo and HTML5 video supported at this point
         if (!this.isVideo || this.isYouTube || (this.isHTML5 && !support.textTracks)) {
             // Clear menu and hide
@@ -203,6 +207,10 @@ const captions = {
 
     // Display active caption if it contains text
     setCue(input) {
+        if (!this.media) {
+            return;
+        }
+
         // Get the track from the event if needed
         const track = utils.is.event(input) ? input.target : input;
         const { activeCues } = track;

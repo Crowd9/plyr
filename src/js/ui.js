@@ -22,6 +22,10 @@ const ui = {
 
     // Toggle native HTML5 media controls
     toggleNativeControls(toggle = false) {
+        if (!this.media) {
+            return;
+        }
+
         if (toggle && this.isHTML5) {
             this.media.setAttribute('controls', '');
         } else {
@@ -107,6 +111,10 @@ const ui = {
 
         // Ready event at end of execution stack
         setTimeout(() => {
+            if (!this.media) {
+                return;
+            }
+
             utils.dispatchEvent.call(this, this.media, 'ready');
         }, 0);
 
@@ -178,6 +186,10 @@ const ui = {
         if (!this.elements) {
             return Promise.reject();
         }
+        if (!this.media) {
+            return Promise.reject();
+        }
+
         // Set property regardless of validity
         this.media.setAttribute('poster', poster);
 

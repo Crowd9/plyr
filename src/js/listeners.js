@@ -288,6 +288,10 @@ class Listeners {
             return;
         }
 
+        if (!this.player.media) {
+            return;
+        }
+
         // Time change on media
         utils.on(this.player.media, 'timeupdate seeking seeked', event => controls.timeUpdate.call(this.player, event));
 
@@ -431,6 +435,10 @@ class Listeners {
             'keydown',
         ]).join(' '), event => {
             if (!this.player.elements) {
+                return;
+            }
+
+            if (!this.player.media) {
                 return;
             }
 
@@ -716,6 +724,10 @@ class Listeners {
             this.player.elements.inputs.volume,
             'wheel',
             event => {
+                if (!this.player.media) {
+                    return;
+                }
+
                 // Detect "natural" scroll - suppored on OS X Safari only
                 // Other browsers on OS X will be inverted until support improves
                 const inverted = event.webkitDirectionInvertedFromDevice;
