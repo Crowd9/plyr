@@ -61,25 +61,25 @@
         height: 100%;
     }
 
-    .plyr__video-wrapper {
+    .ggs-plyr__video-wrapper {
         height: 100%;
         width: 100%;
     }
 
-    .plyr__video-embed {
+    .ggs-plyr__video-embed {
         // Revert overflow change
         overflow: visible;
     }
 
     // Vimeo requires some different styling
-    &.plyr--vimeo .plyr__video-wrapper {
+    &.ggs-plyr--vimeo .ggs-plyr__video-wrapper {
         height: 0;
         top: 50%;
         transform: translateY(-50%);
     }
 
     // Display correct icon
-    .plyr__control .icon--exit-fullscreen {
+    .ggs-plyr__control .icon--exit-fullscreen {
         display: block;
 
         + svg {
@@ -88,13 +88,13 @@
     }
 
     // Hide cursor in fullscreen when controls hidden
-    &.plyr--hide-controls {
+    &.ggs-plyr--hide-controls {
         cursor: none;
     }
 
     // Large captions in full screen on larger screens
     @media (min-width: $plyr-bp-lg) {
-        .plyr__captions {
+        .ggs-plyr__captions {
             font-size: $plyr-font-size-captions-large;
         }
     }

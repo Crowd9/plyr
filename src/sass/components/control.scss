@@ -2,7 +2,7 @@
 // Control buttons
 // --------------------------------------------------------------
 
-.plyr__control {
+.ggs-plyr__control {
     background: transparent;
     border: 0;
     border-radius: $plyr-control-radius;
@@ -28,22 +28,22 @@
     }
 
     // Tab focus
-    &.plyr__tab-focus {
+    &.ggs-plyr__tab-focus {
         @include plyr-tab-focus();
     }
 }
 
 // Change icons on state change
-.plyr__control[aria-pressed='false'] .icon--pressed,
-.plyr__control[aria-pressed='true'] .icon--not-pressed,
-.plyr__control[aria-pressed='false'] .label--pressed,
-.plyr__control[aria-pressed='true'] .label--not-pressed {
+.ggs-plyr__control[aria-pressed='false'] .icon--pressed,
+.ggs-plyr__control[aria-pressed='true'] .icon--not-pressed,
+.ggs-plyr__control[aria-pressed='false'] .label--pressed,
+.ggs-plyr__control[aria-pressed='true'] .label--not-pressed {
     display: none;
 }
 
 // Audio styles
-.plyr--audio .plyr__control {
-    &.plyr__tab-focus,
+.ggs-plyr--audio .ggs-plyr__control {
+    &.ggs-plyr__tab-focus,
     &:hover,
     &[aria-expanded='true'] {
         background: $plyr-audio-control-bg-hover;
@@ -52,7 +52,7 @@
 }
 
 // Large play button (video only)
-.plyr__control--overlaid {
+.ggs-plyr__control--overlaid {
     background: rgba($plyr-video-control-bg-hover, 0.8);
     border: 0;
     border-radius: 100%;
@@ -79,11 +79,11 @@
     }
 }
 
-.plyr--playing .plyr__control--overlaid {
+.ggs-plyr--playing .ggs-plyr__control--overlaid {
     opacity: 0;
     visibility: hidden;
 }
 
-.plyr--full-ui.plyr--video .plyr__control--overlaid {
+.ggs-plyr--full-ui.ggs-plyr--video .ggs-plyr__control--overlaid {
     display: block;
 }

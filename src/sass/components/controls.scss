@@ -3,21 +3,21 @@
 // --------------------------------------------------------------
 
 // Hide native controls
-.plyr--full-ui ::-webkit-media-controls {
+.ggs-plyr--full-ui ::-webkit-media-controls {
     display: none;
 }
 
 // Playback controls
-.plyr__controls {
+.ggs-plyr__controls {
     align-items: center;
     display: flex;
     text-align: center;
 
     // Spacing
-    > .plyr__control,
-    .plyr__progress,
-    .plyr__time,
-    .plyr__menu {
+    > .ggs-plyr__control,
+    .ggs-plyr__progress,
+    .ggs-plyr__time,
+    .ggs-plyr__menu {
         margin-left: ($plyr-control-spacing / 2);
 
         &:first-child,
@@ -26,28 +26,28 @@
         }
     }
 
-    .plyr__volume {
+    .ggs-plyr__volume {
         margin-left: ($plyr-control-spacing / 2);
     }
 
     @media (min-width: $plyr-bp-sm) {
-        > .plyr__control,
-        .plyr__progress,
-        .plyr__time,
-        .plyr__menu {
+        > .ggs-plyr__control,
+        .ggs-plyr__progress,
+        .ggs-plyr__time,
+        .ggs-plyr__menu {
             margin-left: $plyr-control-spacing;
         }
 
-        > .plyr__control + .plyr__control,
-        .plyr__menu + .plyr__control,
-        > .plyr__control + .plyr__menu {
+        > .ggs-plyr__control + .ggs-plyr__control,
+        .ggs-plyr__menu + .ggs-plyr__control,
+        > .ggs-plyr__control + .ggs-plyr__menu {
             margin-left: ($plyr-control-spacing / 2);
         }
     }
 }
 
 // Video controls
-.plyr--video .plyr__controls {
+.ggs-plyr--video .ggs-plyr__controls {
     background: linear-gradient(rgba($plyr-video-controls-bg, 0), rgba($plyr-video-controls-bg, 0.7));
     border-bottom-left-radius: inherit;
     border-bottom-right-radius: inherit;
@@ -60,13 +60,13 @@
     transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
     z-index: 2;
 
-    .plyr__control {
+    .ggs-plyr__control {
         svg {
             filter: drop-shadow(0 1px 1px rgba(#000, 0.15));
         }
 
         // Hover and tab focus
-        &.plyr__tab-focus,
+        &.ggs-plyr__tab-focus,
         &:hover,
         &[aria-expanded='true'] {
             background: $plyr-video-control-bg-hover;
@@ -76,7 +76,7 @@
 }
 
 // Audio controls
-.plyr--audio .plyr__controls {
+.ggs-plyr--audio .ggs-plyr__controls {
     background: $plyr-audio-controls-bg;
     border-radius: inherit;
     color: $plyr-audio-control-color;
@@ -84,22 +84,22 @@
 }
 
 // Hide controls
-.plyr--video.plyr--hide-controls .plyr__controls {
+.ggs-plyr--video.ggs-plyr--hide-controls .ggs-plyr__controls {
     opacity: 0;
     pointer-events: none;
     transform: translateY(100%);
 }
 
 // Some options are hidden by default
-.plyr [data-plyr='captions'],
-.plyr [data-plyr='pip'],
-.plyr [data-plyr='airplay'],
-.plyr [data-plyr='fullscreen'] {
+.ggs-plyr [data-plyr='captions'],
+.ggs-plyr [data-plyr='pip'],
+.ggs-plyr [data-plyr='airplay'],
+.ggs-plyr [data-plyr='fullscreen'] {
     display: none;
 }
-.plyr--captions-enabled [data-plyr='captions'],
-.plyr--pip-supported [data-plyr='pip'],
-.plyr--airplay-supported [data-plyr='airplay'],
-.plyr--fullscreen-enabled [data-plyr='fullscreen'] {
+.ggs-plyr--captions-enabled [data-plyr='captions'],
+.ggs-plyr--pip-supported [data-plyr='pip'],
+.ggs-plyr--airplay-supported [data-plyr='airplay'],
+.ggs-plyr--fullscreen-enabled [data-plyr='fullscreen'] {
     display: inline-block;
 }

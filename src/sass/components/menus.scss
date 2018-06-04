@@ -2,21 +2,21 @@
 // Menus
 // --------------------------------------------------------------
 
-.plyr__menu {
+.ggs-plyr__menu {
     display: flex; // Edge fix
     position: relative;
 
     // Animate the icon
-    .plyr__control svg {
+    .ggs-plyr__control svg {
         transition: transform 0.3s ease;
     }
-    .plyr__control[aria-expanded='true'] {
+    .ggs-plyr__control[aria-expanded='true'] {
         svg {
             transform: rotate(90deg);
         }
 
         // Hide tooltip
-        .plyr__tooltip {
+        .ggs-plyr__tooltip {
             display: none;
         }
     }
@@ -70,7 +70,7 @@
         }
 
         // Options
-        .plyr__control {
+        .ggs-plyr__control {
             align-items: center;
             color: $plyr-menu-color;
             display: flex;
@@ -95,7 +95,7 @@
                     right: 5px;
                 }
 
-                &.plyr__tab-focus::after,
+                &.ggs-plyr__tab-focus::after,
                 &:hover::after {
                     border-left-color: currentColor;
                 }
@@ -128,14 +128,14 @@
                     top: 100%;
                 }
 
-                &.plyr__tab-focus::after,
+                &.ggs-plyr__tab-focus::after,
                 &:hover::after {
                     border-right-color: currentColor;
                 }
             }
         }
 
-        label.plyr__control {
+        label.ggs-plyr__control {
             padding-left: $plyr-control-padding;
 
             input[type='radio'] + span {
@@ -177,14 +177,14 @@
                 @include plyr-tab-focus();
             }
 
-            &.plyr__tab-focus input[type='radio'] + span,
+            &.ggs-plyr__tab-focus input[type='radio'] + span,
             &:hover input[type='radio'] + span {
                 background: rgba(#000, 0.1);
             }
         }
 
         // Option value
-        .plyr__menu__value {
+        .ggs-plyr__menu__value {
             align-items: center;
             display: flex;
             margin-left: auto;

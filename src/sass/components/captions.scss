@@ -3,11 +3,11 @@
 // --------------------------------------------------------------
 
 // Hide default captions
-.plyr--full-ui ::-webkit-media-text-track-container {
+.ggs-plyr--full-ui ::-webkit-media-text-track-container {
     display: none;
 }
 
-.plyr__captions {
+.ggs-plyr__captions {
     animation: plyr-fade-in 0.3s ease;
     bottom: 0;
     color: $plyr-captions-color;
@@ -49,10 +49,10 @@
     }
 }
 
-.plyr--captions-active .plyr__captions {
+.ggs-plyr--captions-active .ggs-plyr__captions {
     display: block;
 }
 
-.plyr--hide-controls .plyr__captions {
+.ggs-plyr--hide-controls .ggs-plyr__captions {
     transform: translateY(-($plyr-control-spacing * 1.5));
 }

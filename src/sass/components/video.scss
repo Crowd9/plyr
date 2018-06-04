@@ -2,16 +2,16 @@
 // Video styles
 // --------------------------------------------------------------
 
-.plyr--video {
+.ggs-plyr--video {
     overflow: hidden;
 
     // Menu open
-    &.plyr--menu-open {
+    &.ggs-plyr--menu-open {
         overflow: visible;
     }
 }
 
-.plyr__video-wrapper {
+.ggs-plyr__video-wrapper {
     background: #000;
     border-radius: inherit;
     overflow: hidden;
