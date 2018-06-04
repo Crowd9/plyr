@@ -83,6 +83,10 @@ class Fullscreen {
                 return;
             }
 
+            if (!this.player.config.fullscreen.dblclick) {
+                return;
+            }
+
             // Ignore double click in controls
             if (utils.is.element(this.player.elements.controls) && this.player.elements.controls.contains(event.target)) {
                 return;
