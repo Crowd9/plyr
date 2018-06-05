@@ -2,7 +2,7 @@
 // Slider inputs - <input type="range">
 // --------------------------------------------------------------
 
-.plyr--full-ui input[type='range'] {
+.ggs-plyr--full-ui input[type='range'] {
     // WebKit
     -webkit-appearance: none; /* stylelint-disable-line */
     background: transparent;
@@ -78,7 +78,7 @@
         border: 0;
     }
 
-    &.plyr__tab-focus {
+    &.ggs-plyr__tab-focus {
         &::-webkit-slider-runnable-track {
             @include plyr-tab-focus();
         }
@@ -94,7 +94,7 @@
 }
 
 // Video range inputs
-.plyr--full-ui.plyr--video input[type='range'] {
+.ggs-plyr--full-ui.ggs-plyr--video input[type='range'] {
     &::-webkit-slider-runnable-track {
         background-color: $plyr-video-range-track-bg;
     }
@@ -124,7 +124,7 @@
 }
 
 // Audio range inputs
-.plyr--full-ui.plyr--audio input[type='range'] {
+.ggs-plyr--full-ui.ggs-plyr--audio input[type='range'] {
     &::-webkit-slider-runnable-track {
         background-color: $plyr-audio-range-track-bg;
     }
