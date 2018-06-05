@@ -6323,12 +6323,18 @@ var utils = {
 
     // Find all elements
     getElements: function getElements(selector) {
+        if (!this.elements) {
+            return document.querySelectorAll('#youwillneverfindme-oi1io1io991918');
+        }
         return this.elements.container.querySelectorAll(selector);
     },
 
 
     // Find a single element
     getElement: function getElement(selector) {
+        if (!this.elements) {
+            return null;
+        }
         return this.elements.container.querySelector(selector);
     },
 
@@ -6352,6 +6358,9 @@ var utils = {
         var element = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
         var toggle = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
+        if (!this.elements) {
+            return;
+        }
         if (!utils.is.element(element)) {
             return;
         }
@@ -7010,6 +7019,10 @@ var html5 = {
             return null;
         }
 
+        if (!this.media) {
+            return null;
+        }
+
         return this.media.querySelectorAll('source');
     },
 
@@ -7049,6 +7062,10 @@ var html5 = {
 
         var player = this;
 
+        if (!player.media) {
+            return;
+        }
+
         // Quality
         Object.defineProperty(player.media, 'quality', {
             get: function get() {
@@ -7070,6 +7087,10 @@ var html5 = {
                 return Number(matches[0].getAttribute('size'));
             },
             set: function set(input) {
+                if (!player.media) {
+                    return;
+                }
+
                 // Get sources
                 var sources = html5.getSources.call(player);
 
@@ -7138,6 +7159,10 @@ var html5 = {
     // See https://github.com/sampotts/plyr/issues/174
     cancelRequests: function cancelRequests() {
         if (!this.isHTML5) {
+            return;
+        }
+
+        if (!this.media) {
             return;
         }
 
@@ -7216,6 +7241,10 @@ var controls = {
     // TODO: Allow settings menus with custom controls
     findElements: function findElements() {
         try {
+            if (!this.elements) {
+                return false;
+            }
+
             this.elements.controls = utils.getElement.call(this, this.config.selectors.controls.wrapper);
 
             // Buttons
@@ -7349,6 +7378,11 @@ var controls = {
     // Create a <button>
     createButton: function createButton(buttonType, attr) {
         var button = utils.createElement('button');
+
+        if (!this.elements) {
+            return button;
+        }
+
         var attributes = Object.assign({}, attr);
         var type = utils.toCamelCase(buttonType);
 
@@ -7455,6 +7489,15 @@ var controls = {
 
     // Create an <input type='range'>
     createRange: function createRange(type, attributes) {
+        if (!this.elements) {
+            var _label = utils.createElement('label');
+            var _input = utils.createElement('input');
+            return {
+                label: _label,
+                input: _input
+            };
+        }
+
         // Seek label
         var label = utils.createElement('label', {
             for: attributes.id,
@@ -7492,6 +7535,11 @@ var controls = {
 
     // Create a <progress>
     createProgress: function createProgress(type, attributes) {
+        if (!this.elements) {
+            var _progress = utils.createElement('progress');
+            return _progress;
+        }
+
         var progress = utils.createElement('progress', utils.extend(utils.getAttributesFromSelector(this.config.selectors.display[type]), {
             min: 0,
             max: 100,
@@ -7529,10 +7577,15 @@ var controls = {
 
     // Create time display
     createTime: function createTime(type) {
+        if (!this.elements) {
+            var _container = utils.createElement('div');
+            return _container;
+        }
+
         var attributes = utils.getAttributesFromSelector(this.config.selectors.display[type]);
 
         var container = utils.createElement('div', utils.extend(attributes, {
-            class: 'plyr__time ' + attributes.class,
+            class: 'ggs-plyr__time ' + attributes.class,
             'aria-label': i18n.get(type, this.config)
         }), '00:00');
 
@@ -7556,10 +7609,10 @@ var controls = {
 
         var radio = utils.createElement('input', utils.extend(utils.getAttributesFromSelector(this.config.selectors.inputs[type]), {
             type: 'radio',
-            name: 'plyr-' + type,
+            name: 'ggs-plyr-' + type,
             value: value,
             checked: checked,
-            class: 'plyr__sr-only'
+            class: 'ggs-plyr__sr-only'
         }));
 
         var faux = utils.createElement('span', { hidden: '' });
@@ -7602,6 +7655,10 @@ var controls = {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
         // Update range
         if (utils.is.element(this.elements.inputs.volume)) {
             controls.setRange.call(this, this.elements.inputs.volume, this.muted ? 0 : this.volume);
@@ -7638,9 +7695,17 @@ var controls = {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
         var value = 0;
 
         var setProgress = function setProgress(target, input) {
+            if (!_this.elements) {
+                return;
+            }
+
             var value = utils.is.number(input) ? input : 0;
             var progress = utils.is.element(target) ? target : _this.elements.display.buffer;
 
@@ -7704,13 +7769,17 @@ var controls = {
         }
 
         // Set CSS custom property
-        range.style.setProperty('--value', range.value / range.max * 100 + '%');
+        range.style.setProperty('--value', range.value / range.max * 100 + '%', 'important');
     },
 
 
     // Update hover tooltip for seeking
     updateSeekTooltip: function updateSeekTooltip(event) {
         var _this2 = this;
+
+        if (!this.elements) {
+            return;
+        }
 
         // Bail if setting not true
         if (!this.config.tooltips.seek || !utils.is.element(this.elements.inputs.seek) || !utils.is.element(this.elements.display.seekTooltip) || this.duration === 0) {
@@ -7752,7 +7821,7 @@ var controls = {
         controls.updateTimeDisplay.call(this, this.elements.display.seekTooltip, this.duration / 100 * percent);
 
         // Set position
-        this.elements.display.seekTooltip.style.left = percent + '%';
+        this.elements.display.seekTooltip.style.setProperty('left', percent + '%', 'important');
 
         // Show/hide the tooltip
         // If the event is a moues in/out and percentage is inside bounds
@@ -7764,6 +7833,10 @@ var controls = {
 
     // Handle time change event
     timeUpdate: function timeUpdate(event) {
+        if (!this.elements) {
+            return;
+        }
+
         // Only invert if only one time element is displayed and used for both duration and currentTime
         var invert = !utils.is.element(this.elements.display.duration) && this.config.invertTime;
 
@@ -7787,6 +7860,10 @@ var controls = {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
         // If there's a spot to display duration
         var hasDuration = utils.is.element(this.elements.display.duration);
 
@@ -7807,6 +7884,10 @@ var controls = {
 
     // Hide/show a tab
     toggleTab: function toggleTab(setting, toggle) {
+        if (!this.elements) {
+            return;
+        }
+
         utils.toggleHidden(this.elements.settings.tabs[setting], !toggle);
     },
 
@@ -7900,6 +7981,10 @@ var controls = {
 
     // Update the selected setting
     updateSetting: function updateSetting(setting, container, input) {
+        if (!this.elements) {
+            return;
+        }
+
         var pane = this.elements.settings.panes[setting];
         var value = null;
         var list = container;
@@ -8009,6 +8094,10 @@ var controls = {
     setCaptionsMenu: function setCaptionsMenu() {
         var _this4 = this;
 
+        if (!this.elements) {
+            return;
+        }
+
         // TODO: Captions or language? Currently it's mixed
         var type = 'captions';
         var list = this.elements.settings.panes.captions.querySelector('ul');
@@ -8054,6 +8143,10 @@ var controls = {
     // Set a list of available captions languages
     setSpeedMenu: function setSpeedMenu(options) {
         var _this5 = this;
+
+        if (!this.elements) {
+            return;
+        }
 
         // Do nothing if not selected
         if (!this.config.controls.includes('settings') || !this.config.settings.includes('speed')) {
@@ -8109,6 +8202,10 @@ var controls = {
 
     // Check if we need to hide/show the settings menu
     checkMenu: function checkMenu() {
+        if (!this.elements) {
+            return;
+        }
+
         var tabs = this.elements.settings.tabs;
 
         var visible = !utils.is.empty(tabs) && Object.values(tabs).some(function (tab) {
@@ -8121,6 +8218,10 @@ var controls = {
 
     // Show/hide menu
     toggleMenu: function toggleMenu(event) {
+        if (!this.elements) {
+            return;
+        }
+
         var form = this.elements.settings.form;
 
         var button = this.elements.buttons.settings;
@@ -8170,8 +8271,8 @@ var controls = {
     // Get the natural size of a tab
     getTabSize: function getTabSize(tab) {
         var clone = tab.cloneNode(true);
-        clone.style.position = 'absolute';
-        clone.style.opacity = 0;
+        clone.style.setProperty('position', 'absolute', 'important');
+        clone.style.setProperty('opacity', 0, 'important');
         clone.removeAttribute('hidden');
 
         // Prevent input's being unchecked due to the name being identical
@@ -8200,6 +8301,11 @@ var controls = {
     // Toggle Menu
     showTab: function showTab() {
         var target = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+
+        if (!this.elements) {
+            return;
+        }
+
         var menu = this.elements.settings.menu;
 
         var pane = document.getElementById(target);
@@ -8228,8 +8334,8 @@ var controls = {
         // If we can do fancy animations, we'll animate the height/width
         if (support.transitions && !support.reducedMotion) {
             // Set the current width as a base
-            container.style.width = current.scrollWidth + 'px';
-            container.style.height = current.scrollHeight + 'px';
+            container.style.setProperty('width', current.scrollWidth + 'px', 'important');
+            container.style.setProperty('height', current.scrollHeight + 'px', 'important');
 
             // Get potential sizes
             var size = controls.getTabSize.call(this, pane);
@@ -8242,8 +8348,8 @@ var controls = {
                 }
 
                 // Revert back to auto
-                container.style.width = '';
-                container.style.height = '';
+                container.style.setProperty('width', '');
+                container.style.setProperty('height', '');
 
                 // Only listen once
                 utils.off(container, utils.transitionEndEvent, restore);
@@ -8253,8 +8359,8 @@ var controls = {
             utils.on(container, utils.transitionEndEvent, restore);
 
             // Set dimensions to target
-            container.style.width = size.width + 'px';
-            container.style.height = size.height + 'px';
+            container.style.setProperty('width', size.width + 'px', 'important');
+            container.style.setProperty('height', size.height + 'px', 'important');
         }
 
         // Set attributes on current tab
@@ -8279,6 +8385,10 @@ var controls = {
     // TODO: Set order based on order in the config.controls array?
     create: function create(data) {
         var _this6 = this;
+
+        if (!this.elements) {
+            return null;
+        }
 
         // Do nothing if we want no controls
         if (utils.is.empty(this.config.controls)) {
@@ -8314,7 +8424,7 @@ var controls = {
 
             // Seek range slider
             var seek = controls.createRange.call(this, 'seek', {
-                id: 'plyr-seek-' + data.id
+                id: 'ggs-plyr-seek-' + data.id
             });
             progress.appendChild(seek.label);
             progress.appendChild(seek.input);
@@ -8356,7 +8466,7 @@ var controls = {
         // Volume range control
         if (this.config.controls.includes('volume')) {
             var volume = utils.createElement('div', {
-                class: 'plyr__volume'
+                class: 'ggs-plyr__volume'
             });
 
             // Set the attributes
@@ -8368,7 +8478,7 @@ var controls = {
 
             // Create the volume range slider
             var range = controls.createRange.call(this, 'volume', utils.extend(attributes, {
-                id: 'plyr-volume-' + data.id
+                id: 'ggs-plyr-volume-' + data.id
             }));
             volume.appendChild(range.label);
             volume.appendChild(range.input);
@@ -8386,22 +8496,22 @@ var controls = {
         // Settings button / menu
         if (this.config.controls.includes('settings') && !utils.is.empty(this.config.settings)) {
             var menu = utils.createElement('div', {
-                class: 'plyr__menu',
+                class: 'ggs-plyr__menu',
                 hidden: ''
             });
 
             menu.appendChild(controls.createButton.call(this, 'settings', {
-                id: 'plyr-settings-toggle-' + data.id,
+                id: 'ggs-plyr-settings-toggle-' + data.id,
                 'aria-haspopup': true,
-                'aria-controls': 'plyr-settings-' + data.id,
+                'aria-controls': 'ggs-plyr-settings-' + data.id,
                 'aria-expanded': false
             }));
 
             var form = utils.createElement('form', {
-                class: 'plyr__menu__container',
-                id: 'plyr-settings-' + data.id,
+                class: 'ggs-plyr__menu__container',
+                id: 'ggs-plyr-settings-' + data.id,
                 hidden: '',
-                'aria-labelled-by': 'plyr-settings-toggle-' + data.id,
+                'aria-labelled-by': 'ggs-plyr-settings-toggle-' + data.id,
                 role: 'tablist',
                 tabindex: -1
             });
@@ -8409,8 +8519,8 @@ var controls = {
             var inner = utils.createElement('div');
 
             var home = utils.createElement('div', {
-                id: 'plyr-settings-' + data.id + '-home',
-                'aria-labelled-by': 'plyr-settings-toggle-' + data.id,
+                id: 'ggs-plyr-settings-' + data.id + '-home',
+                'aria-labelled-by': 'ggs-plyr-settings-toggle-' + data.id,
                 role: 'tabpanel'
             });
 
@@ -8421,6 +8531,10 @@ var controls = {
 
             // Build the tabs
             this.config.settings.forEach(function (type) {
+                if (!_this6.elements) {
+                    return;
+                }
+
                 var tab = utils.createElement('li', {
                     role: 'tab',
                     hidden: ''
@@ -8429,9 +8543,9 @@ var controls = {
                 var button = utils.createElement('button', utils.extend(utils.getAttributesFromSelector(_this6.config.selectors.buttons.settings), {
                     type: 'button',
                     class: _this6.config.classNames.control + ' ' + _this6.config.classNames.control + '--forward',
-                    id: 'plyr-settings-' + data.id + '-' + type + '-tab',
+                    id: 'ggs-plyr-settings-' + data.id + '-' + type + '-tab',
                     'aria-haspopup': true,
-                    'aria-controls': 'plyr-settings-' + data.id + '-' + type,
+                    'aria-controls': 'ggs-plyr-settings-' + data.id + '-' + type,
                     'aria-expanded': false
                 }), i18n.get(type, _this6.config));
 
@@ -8454,10 +8568,14 @@ var controls = {
 
             // Build the panes
             this.config.settings.forEach(function (type) {
+                if (!_this6.elements) {
+                    return;
+                }
+
                 var pane = utils.createElement('div', {
-                    id: 'plyr-settings-' + data.id + '-' + type,
+                    id: 'ggs-plyr-settings-' + data.id + '-' + type,
                     hidden: '',
-                    'aria-labelled-by': 'plyr-settings-' + data.id + '-' + type + '-tab',
+                    'aria-labelled-by': 'ggs-plyr-settings-' + data.id + '-' + type + '-tab',
                     role: 'tabpanel',
                     tabindex: -1
                 });
@@ -8466,7 +8584,7 @@ var controls = {
                     type: 'button',
                     class: _this6.config.classNames.control + ' ' + _this6.config.classNames.control + '--back',
                     'aria-haspopup': true,
-                    'aria-controls': 'plyr-settings-' + data.id + '-home',
+                    'aria-controls': 'ggs-plyr-settings-' + data.id + '-home',
                     'aria-expanded': false
                 }, i18n.get(type, _this6.config));
 
@@ -8523,6 +8641,10 @@ var controls = {
     // Insert controls
     inject: function inject() {
         var _this7 = this;
+
+        if (!this.elements) {
+            return;
+        }
 
         // Sprite
         if (this.config.loadSprite) {
@@ -8647,6 +8769,14 @@ var captions = {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
+        if (!this.media) {
+            return;
+        }
+
         // Only Vimeo and HTML5 video supported at this point
         if (!this.isVideo || this.isYouTube || this.isHTML5 && !support.textTracks) {
             // Clear menu and hide
@@ -8706,6 +8836,10 @@ var captions = {
         setTimeout(captions.update.bind(this), 0);
     },
     update: function update() {
+        if (!this.elements) {
+            return;
+        }
+
         // Update tracks
         var tracks = captions.getTracks.call(this);
         this.options.captions = tracks.map(function (_ref) {
@@ -8841,6 +8975,10 @@ var captions = {
 
     // Display active caption if it contains text
     setCue: function setCue(input) {
+        if (!this.media) {
+            return;
+        }
+
         // Get the track from the event if needed
         var track = utils.is.event(input) ? input.target : input;
         var activeCues = track.activeCues;
@@ -8868,6 +9006,10 @@ var captions = {
     setText: function setText(input) {
         // Requires UI
         if (!this.supported.ui) {
+            return;
+        }
+
+        if (!this.elements) {
             return;
         }
 
@@ -9042,7 +9184,8 @@ var defaults$1 = {
     fullscreen: {
         enabled: true, // Allow fullscreen?
         fallback: true, // Fallback for vintage browsers
-        iosNative: false // Use the native fullscreen in iOS (disables custom controls)
+        iosNative: false, // Use the native fullscreen in iOS (disables custom controls)
+        dblclick: true // Toggle fullscreen on double click
     },
 
     // Local storage
@@ -9158,10 +9301,10 @@ var defaults$1 = {
     // Change these to match your template if using custom HTML
     selectors: {
         editable: 'input, textarea, select, [contenteditable]',
-        container: '.plyr',
+        container: '.ggs-plyr',
         controls: {
             container: null,
-            wrapper: '.plyr__controls'
+            wrapper: '.ggs-plyr__controls'
         },
         labels: '[data-plyr]',
         buttons: {
@@ -9186,14 +9329,14 @@ var defaults$1 = {
             quality: '[data-plyr="quality"]'
         },
         display: {
-            currentTime: '.plyr__time--current',
-            duration: '.plyr__time--duration',
-            buffer: '.plyr__progress__buffer',
-            loop: '.plyr__progress__loop', // Used later
-            volume: '.plyr__volume--display'
+            currentTime: '.ggs-plyr__time--current',
+            duration: '.ggs-plyr__time--duration',
+            buffer: '.ggs-plyr__progress__buffer',
+            loop: '.ggs-plyr__progress__loop', // Used later
+            volume: '.ggs-plyr__volume--display'
         },
-        progress: '.plyr__progress',
-        captions: '.plyr__captions',
+        progress: '.ggs-plyr__progress',
+        captions: '.ggs-plyr__captions',
         menu: {
             quality: '.js-plyr__menu__list--quality'
         }
@@ -9201,50 +9344,50 @@ var defaults$1 = {
 
     // Class hooks added to the player in different states
     classNames: {
-        type: 'plyr--{0}',
-        provider: 'plyr--{0}',
-        video: 'plyr__video-wrapper',
-        embed: 'plyr__video-embed',
-        embedContainer: 'plyr__video-embed__container',
-        poster: 'plyr__poster',
-        posterEnabled: 'plyr__poster-enabled',
-        ads: 'plyr__ads',
-        control: 'plyr__control',
-        playing: 'plyr--playing',
-        paused: 'plyr--paused',
-        stopped: 'plyr--stopped',
-        loading: 'plyr--loading',
-        hover: 'plyr--hover',
-        tooltip: 'plyr__tooltip',
-        cues: 'plyr__cues',
-        hidden: 'plyr__sr-only',
-        hideControls: 'plyr--hide-controls',
-        isIos: 'plyr--is-ios',
-        isTouch: 'plyr--is-touch',
-        uiSupported: 'plyr--full-ui',
-        noTransition: 'plyr--no-transition',
+        type: 'ggs-plyr--{0}',
+        provider: 'ggs-plyr--{0}',
+        video: 'ggs-plyr__video-wrapper',
+        embed: 'ggs-plyr__video-embed',
+        embedContainer: 'ggs-plyr__video-embed__container',
+        poster: 'ggs-plyr__poster',
+        posterEnabled: 'ggs-plyr__poster-enabled',
+        ads: 'ggs-plyr__ads',
+        control: 'ggs-plyr__control',
+        playing: 'ggs-plyr--playing',
+        paused: 'ggs-plyr--paused',
+        stopped: 'ggs-plyr--stopped',
+        loading: 'ggs-plyr--loading',
+        hover: 'ggs-plyr--hover',
+        tooltip: 'ggs-plyr__tooltip',
+        cues: 'ggs-plyr__cues',
+        hidden: 'ggs-plyr__sr-only',
+        hideControls: 'ggs-plyr--hide-controls',
+        isIos: 'ggs-plyr--is-ios',
+        isTouch: 'ggs-plyr--is-touch',
+        uiSupported: 'ggs-plyr--full-ui',
+        noTransition: 'ggs-plyr--no-transition',
         menu: {
-            value: 'plyr__menu__value',
-            badge: 'plyr__badge',
-            open: 'plyr--menu-open'
+            value: 'ggs-plyr__menu__value',
+            badge: 'ggs-plyr__badge',
+            open: 'ggs-plyr--menu-open'
         },
         captions: {
-            enabled: 'plyr--captions-enabled',
-            active: 'plyr--captions-active'
+            enabled: 'ggs-plyr--captions-enabled',
+            active: 'ggs-plyr--captions-active'
         },
         fullscreen: {
-            enabled: 'plyr--fullscreen-enabled',
-            fallback: 'plyr--fullscreen-fallback'
+            enabled: 'ggs-plyr--fullscreen-enabled',
+            fallback: 'ggs-plyr--fullscreen-fallback'
         },
         pip: {
-            supported: 'plyr--pip-supported',
-            active: 'plyr--pip-active'
+            supported: 'ggs-plyr--pip-supported',
+            active: 'ggs-plyr--pip-active'
         },
         airplay: {
-            supported: 'plyr--airplay-supported',
-            active: 'plyr--airplay-active'
+            supported: 'ggs-plyr--airplay-supported',
+            active: 'ggs-plyr--airplay-active'
         },
-        tabFocus: 'plyr__tab-focus'
+        tabFocus: 'ggs-plyr__tab-focus'
     },
 
     // Embed attributes
@@ -9277,6 +9420,10 @@ function onChange() {
         return;
     }
 
+    if (!this.player.elements) {
+        return;
+    }
+
     // Update toggle button
     var button = this.player.elements.buttons.fullscreen;
     if (utils.is.element(button)) {
@@ -9306,7 +9453,7 @@ function toggleFallback() {
     }
 
     // Toggle scroll
-    document.body.style.overflow = toggle ? 'hidden' : '';
+    toggle ? document.body.style.setProperty('overflow', 'hidden', 'important') : document.body.style.setProperty('overflow', '');
 
     // Toggle class hook
     utils.toggleClass(this.target, this.player.config.classNames.fullscreen.fallback, toggle);
@@ -9324,6 +9471,10 @@ var Fullscreen = function () {
         // Keep reference to parent
         this.player = player;
 
+        if (!this.player.elements) {
+            return;
+        }
+
         // Get prefix
         this.prefix = Fullscreen.prefix;
         this.property = Fullscreen.property;
@@ -9340,6 +9491,14 @@ var Fullscreen = function () {
 
         // Fullscreen toggle on double click
         utils.on(this.player.elements.container, 'dblclick', function (event) {
+            if (!_this.player.elements) {
+                return;
+            }
+
+            if (!_this.player.config.fullscreen.dblclick) {
+                return;
+            }
+
             // Ignore double click in controls
             if (utils.is.element(_this.player.elements.controls) && _this.player.elements.controls.contains(event.target)) {
                 return;
@@ -9365,6 +9524,10 @@ var Fullscreen = function () {
                 this.player.debug.log((Fullscreen.native ? 'Native' : 'Fallback') + ' fullscreen enabled');
             } else {
                 this.player.debug.log('Fullscreen not supported and fallback disabled');
+            }
+
+            if (!this.player.elements) {
+                return;
             }
 
             // Add styling hook to show button
@@ -9461,6 +9624,10 @@ var Fullscreen = function () {
     }, {
         key: 'target',
         get: function get() {
+            if (!this.player.elements) {
+                return this.player.media;
+            }
+
             return browser$1.isIos && this.player.config.fullscreen.iosNative ? this.player.media : this.player.elements.container;
         }
     }], [{
@@ -9510,6 +9677,9 @@ var browser$2 = utils.getBrowser();
 
 var ui = {
     addStyleHook: function addStyleHook() {
+        if (!this.elements) {
+            return;
+        }
         utils.toggleClass(this.elements.container, this.config.selectors.container.replace('.', ''), true);
         utils.toggleClass(this.elements.container, this.config.classNames.uiSupported, this.supported.ui);
     },
@@ -9518,6 +9688,10 @@ var ui = {
     // Toggle native HTML5 media controls
     toggleNativeControls: function toggleNativeControls() {
         var toggle = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+        if (!this.media) {
+            return;
+        }
 
         if (toggle && this.isHTML5) {
             this.media.setAttribute('controls', '');
@@ -9531,6 +9705,9 @@ var ui = {
     build: function build() {
         var _this = this;
 
+        if (!this.elements) {
+            return;
+        }
         // Re-attach media element listeners
         // TODO: Use event bubbling?
         this.listeners.media();
@@ -9604,6 +9781,10 @@ var ui = {
 
         // Ready event at end of execution stack
         setTimeout(function () {
+            if (!_this.media) {
+                return;
+            }
+
             utils.dispatchEvent.call(_this, _this.media, 'ready');
         }, 0);
 
@@ -9625,6 +9806,9 @@ var ui = {
 
     // Setup aria attribute for play and iframe title
     setTitle: function setTitle() {
+        if (!this.elements) {
+            return;
+        }
         // Find the current text
         var label = i18n.get('play', this.config);
 
@@ -9663,6 +9847,9 @@ var ui = {
 
     // Toggle poster
     togglePoster: function togglePoster(enable) {
+        if (!this.elements) {
+            return;
+        }
         utils.toggleClass(this.elements.container, this.config.classNames.posterEnabled, enable);
     },
 
@@ -9670,6 +9857,13 @@ var ui = {
     // Set the poster image (async)
     setPoster: function setPoster(poster) {
         var _this2 = this;
+
+        if (!this.elements) {
+            return Promise.reject();
+        }
+        if (!this.media) {
+            return Promise.reject();
+        }
 
         // Set property regardless of validity
         this.media.setAttribute('poster', poster);
@@ -9681,12 +9875,8 @@ var ui = {
 
         // Load the image, and set poster if successful
         var loadPromise = utils.loadImage(poster).then(function () {
-            _this2.elements.poster.style.backgroundImage = 'url(\'' + poster + '\')';
-            Object.assign(_this2.elements.poster.style, {
-                backgroundImage: 'url(\'' + poster + '\')',
-                // Reset backgroundSize as well (since it can be set to "cover" for padded thumbnails for youtube)
-                backgroundSize: ''
-            });
+            _this2.elements.poster.style.setProperty('background-image', 'url(\'' + poster + '\')', 'important');
+            _this2.elements.poster.style.setProperty('background-size', '');
             ui.togglePoster.call(_this2, true);
             return poster;
         });
@@ -9703,6 +9893,10 @@ var ui = {
 
     // Check playing state
     checkPlaying: function checkPlaying(event) {
+        if (!this.elements) {
+            return;
+        }
+
         // Class hooks
         utils.toggleClass(this.elements.container, this.config.classNames.playing, this.playing);
         utils.toggleClass(this.elements.container, this.config.classNames.paused, this.paused);
@@ -9732,6 +9926,10 @@ var ui = {
 
         // Timer to prevent flicker when seeking
         this.timers.loading = setTimeout(function () {
+            if (!_this3.elements) {
+                return;
+            }
+
             // Update progress bar loading class state
             utils.toggleClass(_this3.elements.container, _this3.config.classNames.loading, _this3.loading);
 
@@ -9743,6 +9941,9 @@ var ui = {
 
     // Toggle controls based on state and `force` argument
     toggleControls: function toggleControls(force) {
+        if (!this.elements) {
+            return;
+        }
         var controls$$1 = this.elements.controls;
 
 
@@ -9928,6 +10129,10 @@ var Listeners = function () {
     }, {
         key: 'firstTouch',
         value: function firstTouch() {
+            if (!this.player.elements) {
+                return;
+            }
+
             this.player.touch = true;
 
             // Add touch class
@@ -9963,6 +10168,10 @@ var Listeners = function () {
         value: function container() {
             var _this2 = this;
 
+            if (!this.player.elements) {
+                return;
+            }
+
             // Keyboard shortcuts
             if (!this.player.config.keyboard.global && this.player.config.keyboard.focused) {
                 utils.on(this.player.elements.container, 'keydown keyup', this.handleKey, false);
@@ -9989,6 +10198,10 @@ var Listeners = function () {
 
             // Toggle controls on mouse events and entering fullscreen
             utils.on(this.player.elements.container, 'mousemove mouseleave touchstart touchmove enterfullscreen exitfullscreen', function (event) {
+                if (!_this2.player.elements) {
+                    return;
+                }
+
                 var controls$$1 = _this2.player.elements.controls;
 
                 // Remove button states for fullscreen
@@ -10025,6 +10238,14 @@ var Listeners = function () {
         value: function media() {
             var _this3 = this;
 
+            if (!this.player.elements) {
+                return;
+            }
+
+            if (!this.player.media) {
+                return;
+            }
+
             // Time change on media
             utils.on(this.player.media, 'timeupdate seeking seeked', function (event) {
                 return controls.timeUpdate.call(_this3.player, event);
@@ -10038,6 +10259,9 @@ var Listeners = function () {
             // Check for audio tracks on load
             // We can't use `loadedmetadata` as it doesn't seem to have audio tracks at that point
             utils.on(this.player.media, 'loadeddata', function () {
+                if (!_this3.player.elements) {
+                    return;
+                }
                 utils.toggleHidden(_this3.player.elements.volume, !_this3.player.hasAudio);
                 utils.toggleHidden(_this3.player.elements.buttons.mute, !_this3.player.hasAudio);
             });
@@ -10172,6 +10396,14 @@ var Listeners = function () {
             // Proxy events to container
             // Bubble up key events for Edge
             utils.on(this.player.media, this.player.config.events.concat(['keyup', 'keydown']).join(' '), function (event) {
+                if (!_this3.player.elements) {
+                    return;
+                }
+
+                if (!_this3.player.media) {
+                    return;
+                }
+
                 var detail = {};
 
                 // Get error details from media
@@ -10189,6 +10421,10 @@ var Listeners = function () {
         key: 'controls',
         value: function controls$$1() {
             var _this4 = this;
+
+            if (!this.player.elements) {
+                return;
+            }
 
             // IE doesn't support input event, so we fallback to change
             var inputEvent = browser$3.isIE ? 'change' : 'input';
@@ -10266,7 +10502,7 @@ var Listeners = function () {
 
                 // Go back to home tab on click
                 var showHomeTab = function showHomeTab() {
-                    var id = 'plyr-settings-' + _this4.player.id + '-home';
+                    var id = 'ggs-plyr-settings-' + _this4.player.id + '-home';
                     controls.showTab.call(_this4.player, id);
                 };
 
@@ -10369,11 +10605,18 @@ var Listeners = function () {
 
             // Update controls.hover state (used for ui.toggleControls to avoid hiding when interacting)
             on(this.player.elements.controls, 'mouseenter mouseleave', function (event) {
+                if (!_this4.player.elements) {
+                    return;
+                }
+
                 _this4.player.elements.controls.hover = !_this4.player.touch && event.type === 'mouseenter';
             });
 
             // Update controls.pressed state (used for ui.toggleControls to avoid hiding when interacting)
             on(this.player.elements.controls, 'mousedown mouseup touchstart touchend touchcancel', function (event) {
+                if (!_this4.player.elements) {
+                    return;
+                }
                 _this4.player.elements.controls.pressed = ['mousedown', 'touchstart'].includes(event.type);
             });
 
@@ -10412,6 +10655,10 @@ var Listeners = function () {
 
             // Mouse wheel for volume
             on(this.player.elements.inputs.volume, 'wheel', function (event) {
+                if (!_this4.player.media) {
+                    return;
+                }
+
                 // Detect "natural" scroll - suppored on OS X Safari only
                 // Other browsers on OS X will be inverted until support improves
                 var inverted = event.webkitDirectionInvertedFromDevice;
@@ -10496,13 +10743,13 @@ var vimeo = {
     setAspectRatio: function setAspectRatio(input) {
         var ratio = utils.is.string(input) ? input.split(':') : this.config.ratio.split(':');
         var padding = 100 / ratio[0] * ratio[1];
-        this.elements.wrapper.style.paddingBottom = padding + '%';
+        this.elements.wrapper.style.setProperty('padding-bottom', padding + '%', 'important');
 
         if (this.supported.ui) {
             var height = 240;
             var offset = (height - padding) / (height / 50);
 
-            this.media.style.transform = 'translateY(-' + offset + '%)';
+            this.media.style.setProperty('transform', 'translateY(-' + offset + '%)', 'important');
         }
     },
 
@@ -10981,7 +11228,7 @@ var youtube = {
     // Set aspect ratio
     setAspectRatio: function setAspectRatio() {
         var ratio = this.config.ratio.split(':');
-        this.elements.wrapper.style.paddingBottom = 100 / ratio[0] * ratio[1] + '%';
+        this.elements.wrapper.style.setProperty('padding-bottom', 100 / ratio[0] * ratio[1] + '%', 'important');
     },
 
 
@@ -11027,7 +11274,7 @@ var youtube = {
         }).then(function (posterSrc) {
             // If the image is padded, use background-size "cover" instead (like youtube does too with their posters)
             if (!posterSrc.includes('maxres')) {
-                player.elements.poster.style.backgroundSize = 'cover';
+                player.elements.poster.style.setProperty('background-size', 'cover', 'important');
             }
         });
 
@@ -11373,6 +11620,10 @@ var media = {
             return;
         }
 
+        if (!this.elements) {
+            return;
+        }
+
         // Add type class
         utils.toggleClass(this.elements.container, this.config.classNames.type.replace('{0}', this.type), true);
 
@@ -11657,7 +11908,7 @@ var Ads = function () {
                                 class: _this6.player.config.classNames.cues
                             });
 
-                            cue.style.left = cuePercentage.toString() + '%';
+                            cue.style.setProperty('left', cuePercentage.toString() + '%', 'important');
                             seekElement.appendChild(cue);
                         }
                     }
@@ -11915,7 +12166,7 @@ var Ads = function () {
         key: 'resumeContent',
         value: function resumeContent() {
             // Hide the advertisement container
-            this.elements.container.style.zIndex = '';
+            this.elements.container.style.setProperty('z-index', '');
 
             // Ad is stopped
             this.playing = false;
@@ -11934,7 +12185,7 @@ var Ads = function () {
         key: 'pauseContent',
         value: function pauseContent() {
             // Show the advertisement container
-            this.elements.container.style.zIndex = 3;
+            this.elements.container.style.setProperty('z-index', 3, 'important');
 
             // Ad is playing.
             this.playing = true;
@@ -12106,6 +12357,10 @@ var source = {
     insertElements: function insertElements(type, attributes) {
         var _this = this;
 
+        if (!this.media) {
+            return;
+        }
+
         if (utils.is.string(attributes)) {
             utils.insertElement(type, this.media, {
                 src: attributes
@@ -12133,6 +12388,10 @@ var source = {
 
         // Destroy instance and re-setup
         this.destroy.call(this, function () {
+            if (!_this2.elements) {
+                return;
+            }
+
             // Reset quality options
             _this2.options.quality = [];
 
@@ -12535,6 +12794,10 @@ var Plyr = function () {
          * Play the media, or play the advertisement (if they are not blocked)
          */
         value: function play() {
+            if (!this.media) {
+                return null;
+            }
+
             if (!utils.is.function(this.media.play)) {
                 return null;
             }
@@ -12550,6 +12813,10 @@ var Plyr = function () {
     }, {
         key: 'pause',
         value: function pause() {
+            if (!this.media) {
+                return;
+            }
+
             if (!this.playing || !utils.is.function(this.media.pause)) {
                 return;
             }
@@ -12587,6 +12854,10 @@ var Plyr = function () {
     }, {
         key: 'stop',
         value: function stop() {
+            if (!this.media) {
+                return;
+            }
+
             if (this.isHTML5) {
                 this.pause();
                 this.restart();
@@ -12641,6 +12912,10 @@ var Plyr = function () {
          * @param {boolean} step - How much to decrease by (between 0 and 1)
          */
         value: function increaseVolume(step) {
+            if (!this.media) {
+                return;
+            }
+
             var volume = this.media.muted ? 0 : this.volume;
             this.volume = volume + (utils.is.number(step) ? step : 1);
         }
@@ -12653,6 +12928,10 @@ var Plyr = function () {
     }, {
         key: 'decreaseVolume',
         value: function decreaseVolume(step) {
+            if (!this.media) {
+                return;
+            }
+
             var volume = this.media.muted ? 0 : this.volume;
             this.volume = volume - (utils.is.number(step) ? step : 1);
         }
@@ -12673,6 +12952,14 @@ var Plyr = function () {
         value: function toggleCaptions(input) {
             // If there's no full support
             if (!this.supported.ui) {
+                return;
+            }
+
+            if (!this.elements) {
+                return;
+            }
+
+            if (!this.media) {
                 return;
             }
 
@@ -12706,6 +12993,10 @@ var Plyr = function () {
          * TODO: update player with state, support, enabled
          */
         value: function airplay() {
+            if (!this.media) {
+                return;
+            }
+
             // Show dialog if supported
             if (support.airplay) {
                 this.media.webkitShowPlaybackTargetPicker();
@@ -12720,6 +13011,14 @@ var Plyr = function () {
     }, {
         key: 'toggleControls',
         value: function toggleControls(toggle) {
+            if (!this.elements) {
+                return false;
+            }
+
+            if (!this.media) {
+                return false;
+            }
+
             // Don't toggle if missing UI support or if it's audio
             if (this.supported.ui && !this.isAudio) {
                 // Get state before change
@@ -12754,6 +13053,10 @@ var Plyr = function () {
     }, {
         key: 'on',
         value: function on(event, callback) {
+            if (!this.elements) {
+                return;
+            }
+
             utils.on(this.elements.container, event, callback);
         }
 
@@ -12766,6 +13069,10 @@ var Plyr = function () {
     }, {
         key: 'off',
         value: function off(event, callback) {
+            if (!this.elements) {
+                return;
+            }
+
             utils.off(this.elements.container, event, callback);
         }
 
@@ -12790,7 +13097,7 @@ var Plyr = function () {
 
             var done = function done() {
                 // Reset overflow (incase destroyed while in fullscreen)
-                document.body.style.overflow = '';
+                document.body.style.setProperty('overflow', '');
 
                 // GC for embed
                 _this2.embed = null;
@@ -12952,6 +13259,10 @@ var Plyr = function () {
     }, {
         key: 'paused',
         get: function get() {
+            if (!this.media) {
+                return true;
+            }
+
             return Boolean(this.media.paused);
         }
 
@@ -12972,6 +13283,10 @@ var Plyr = function () {
     }, {
         key: 'ended',
         get: function get() {
+            if (!this.media) {
+                return true;
+            }
+
             return Boolean(this.media.ended);
         }
     }, {
@@ -12979,6 +13294,10 @@ var Plyr = function () {
         set: function set(input) {
             // Bail if media duration isn't available yet
             if (!this.duration) {
+                return;
+            }
+
+            if (!this.media) {
                 return;
             }
 
@@ -12997,6 +13316,10 @@ var Plyr = function () {
          */
         ,
         get: function get() {
+            if (!this.media) {
+                return 0;
+            }
+
             return Number(this.media.currentTime);
         }
 
@@ -13007,6 +13330,10 @@ var Plyr = function () {
     }, {
         key: 'buffered',
         get: function get() {
+            if (!this.media) {
+                return 0;
+            }
+
             var buffered = this.media.buffered;
 
             // YouTube / Vimeo return a float between 0-1
@@ -13032,6 +13359,10 @@ var Plyr = function () {
     }, {
         key: 'seeking',
         get: function get() {
+            if (!this.media) {
+                return false;
+            }
+
             return Boolean(this.media.seeking);
         }
 
@@ -13042,6 +13373,10 @@ var Plyr = function () {
     }, {
         key: 'duration',
         get: function get() {
+            if (!this.media) {
+                return 0;
+            }
+
             // Faux duration set via config
             var fauxDuration = parseFloat(this.config.duration);
 
@@ -13060,6 +13395,10 @@ var Plyr = function () {
     }, {
         key: 'volume',
         set: function set(value) {
+            if (!this.media) {
+                return;
+            }
+
             var volume = value;
             var max = 1;
             var min = 0;
@@ -13104,11 +13443,19 @@ var Plyr = function () {
          */
         ,
         get: function get() {
+            if (!this.media) {
+                return 0;
+            }
+
             return Number(this.media.volume);
         }
     }, {
         key: 'muted',
         set: function set(mute) {
+            if (!this.media) {
+                return;
+            }
+
             var toggle = mute;
 
             // Load muted state from storage
@@ -13133,6 +13480,10 @@ var Plyr = function () {
          */
         ,
         get: function get() {
+            if (!this.media) {
+                return false;
+            }
+
             return Boolean(this.media.muted);
         }
 
@@ -13143,6 +13494,10 @@ var Plyr = function () {
     }, {
         key: 'hasAudio',
         get: function get() {
+            if (!this.media) {
+                return false;
+            }
+
             // Assume yes for all non HTML5 (as we can't tell...)
             if (!this.isHTML5) {
                 return true;
@@ -13164,6 +13519,10 @@ var Plyr = function () {
     }, {
         key: 'speed',
         set: function set(input) {
+            if (!this.media) {
+                return;
+            }
+
             var speed = null;
 
             if (utils.is.number(input)) {
@@ -13203,6 +13562,10 @@ var Plyr = function () {
          */
         ,
         get: function get() {
+            if (!this.media) {
+                return 1;
+            }
+
             return Number(this.media.playbackRate);
         }
 
@@ -13215,6 +13578,10 @@ var Plyr = function () {
     }, {
         key: 'quality',
         set: function set(input) {
+            if (!this.media) {
+                return;
+            }
+
             var quality = null;
 
             if (!utils.is.empty(input)) {
@@ -13255,6 +13622,10 @@ var Plyr = function () {
          */
         ,
         get: function get() {
+            if (!this.media) {
+                return this.options.quality[0];
+            }
+
             return this.media.quality;
         }
 
@@ -13267,6 +13638,10 @@ var Plyr = function () {
     }, {
         key: 'loop',
         set: function set(input) {
+            if (!this.media) {
+                return;
+            }
+
             var toggle = utils.is.boolean(input) ? input : this.config.loop.active;
             this.config.loop.active = toggle;
             this.media.loop = toggle;
@@ -13315,6 +13690,10 @@ var Plyr = function () {
          */
         ,
         get: function get() {
+            if (!this.media) {
+                return false;
+            }
+
             return Boolean(this.media.loop);
         }
 
@@ -13334,6 +13713,10 @@ var Plyr = function () {
          */
         ,
         get: function get() {
+            if (!this.media) {
+                return '';
+            }
+
             return this.media.currentSrc;
         }
 
@@ -13358,6 +13741,10 @@ var Plyr = function () {
          */
         ,
         get: function get() {
+            if (!this.media) {
+                return '';
+            }
+
             if (!this.isVideo) {
                 return null;
             }
@@ -13387,6 +13774,10 @@ var Plyr = function () {
     }, {
         key: 'language',
         set: function set(input) {
+            if (!this.media) {
+                return;
+            }
+
             // Nothing specified
             if (!utils.is.string(input)) {
                 return;
@@ -13450,6 +13841,10 @@ var Plyr = function () {
     }, {
         key: 'pip',
         set: function set(input) {
+            if (!this.media) {
+                return;
+            }
+
             var states = {
                 pip: 'picture-in-picture',
                 inline: 'inline'
@@ -13472,6 +13867,10 @@ var Plyr = function () {
          */
         ,
         get: function get() {
+            if (!this.media) {
+                return false;
+            }
+
             if (!support.pip) {
                 return null;
             }
