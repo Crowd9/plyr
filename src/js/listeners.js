@@ -493,7 +493,7 @@ class Listeners {
 
             // Go back to home tab on click
             const showHomeTab = () => {
-                const id = `plyr-settings-${this.player.id}-home`;
+                const id = `ggs-plyr-settings-${this.player.id}-home`;
                 controls.showTab.call(this.player, id);
             };
 
