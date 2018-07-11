@@ -171,7 +171,7 @@ const build = {
                     .on('error', gutil.log)
                     .pipe(concat(key))
                     .pipe(prefix(browsers, { cascade: false }))
-                    .pipe(cleancss())
+                    .pipe(cleancss({ format: 'beautify' }))
                     .pipe(size(sizeOptions))
                     .pipe(gulp.dest(paths[bundle].output)),
             );
