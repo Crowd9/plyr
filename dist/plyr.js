@@ -253,6 +253,12 @@ typeof navigator === "object" && (function (global, factory) {
         }).then(function () {});
     }
 
+    var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+      return typeof obj;
+    } : function (obj) {
+      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    };
+
     var classCallCheck = function (instance, Constructor) {
       if (!(instance instanceof Constructor)) {
         throw new TypeError("Cannot call a class as a function");
@@ -1645,7 +1651,7 @@ typeof navigator === "object" && (function (global, factory) {
             var attributes = getAttributesFromSelector(this.config.selectors.display[type]);
 
             var container = createElement('div', extend(attributes, {
-                class: 'plyr__time ' + attributes.class,
+                class: 'ggs-plyr__time ' + attributes.class,
                 'aria-label': i18n.get(type, this.config)
             }), '00:00');
 
@@ -1675,10 +1681,10 @@ typeof navigator === "object" && (function (global, factory) {
 
             var radio = createElement('input', extend(getAttributesFromSelector(this.config.selectors.inputs[type]), {
                 type: 'radio',
-                name: 'plyr-' + type,
+                name: 'ggs-plyr-' + type,
                 value: value,
                 checked: checked,
-                class: 'plyr__sr-only'
+                class: 'ggs-plyr__sr-only'
             }));
 
             var faux = createElement('span', { hidden: '' });
@@ -1849,7 +1855,7 @@ typeof navigator === "object" && (function (global, factory) {
             }
 
             // Set CSS custom property
-            range.style.setProperty('--value', range.value / range.max * 100 + '%');
+            range.style.setProperty('--value', range.value / range.max * 100 + '%', 'important');
         },
 
 
@@ -1897,7 +1903,7 @@ typeof navigator === "object" && (function (global, factory) {
             controls.updateTimeDisplay.call(this, this.elements.display.seekTooltip, this.duration / 100 * percent);
 
             // Set position
-            this.elements.display.seekTooltip.style.left = percent + '%';
+            this.elements.display.seekTooltip.style.setProperty('left', percent + '%', 'important');
 
             // Show/hide the tooltip
             // If the event is a moues in/out and percentage is inside bounds
@@ -2327,8 +2333,8 @@ typeof navigator === "object" && (function (global, factory) {
         // Get the natural size of a tab
         getTabSize: function getTabSize(tab) {
             var clone = tab.cloneNode(true);
-            clone.style.position = 'absolute';
-            clone.style.opacity = 0;
+            clone.style.setProperty('position', 'absolute', 'important');
+            clone.style.setProperty('opacity', 0, 'important');
             clone.removeAttribute('hidden');
 
             // Prevent input's being unchecked due to the name being identical
@@ -2387,8 +2393,8 @@ typeof navigator === "object" && (function (global, factory) {
             // If we can do fancy animations, we'll animate the height/width
             if (support.transitions && !support.reducedMotion) {
                 // Set the current width as a base
-                container.style.width = current.scrollWidth + 'px';
-                container.style.height = current.scrollHeight + 'px';
+                container.style.setProperty('width', current.scrollWidth + 'px', 'important');
+                container.style.setProperty('height', current.scrollHeight + 'px', 'important');
 
                 // Get potential sizes
                 var size = controls.getTabSize.call(this, pane);
@@ -2401,8 +2407,8 @@ typeof navigator === "object" && (function (global, factory) {
                     }
 
                     // Revert back to auto
-                    container.style.width = '';
-                    container.style.height = '';
+                    container.style.setProperty('width', '');
+                    container.style.setProperty('height', '');
 
                     // Only listen once
                     off.call(_this6, container, transitionEndEvent, restore);
@@ -2412,8 +2418,8 @@ typeof navigator === "object" && (function (global, factory) {
                 on.call(this, container, transitionEndEvent, restore);
 
                 // Set dimensions to target
-                container.style.width = size.width + 'px';
-                container.style.height = size.height + 'px';
+                container.style.setProperty('width', size.width + 'px', 'important');
+                container.style.setProperty('height', size.height + 'px', 'important');
             }
 
             // Set attributes on current tab
@@ -2473,7 +2479,7 @@ typeof navigator === "object" && (function (global, factory) {
 
                 // Seek range slider
                 progress.appendChild(controls.createRange.call(this, 'seek', {
-                    id: 'plyr-seek-' + data.id
+                    id: 'ggs-plyr-seek-' + data.id
                 }));
 
                 // Buffer progress
@@ -2513,7 +2519,7 @@ typeof navigator === "object" && (function (global, factory) {
             // Volume range control
             if (this.config.controls.includes('volume')) {
                 var volume = createElement('div', {
-                    class: 'plyr__volume'
+                    class: 'ggs-plyr__volume'
                 });
 
                 // Set the attributes
@@ -2525,7 +2531,7 @@ typeof navigator === "object" && (function (global, factory) {
 
                 // Create the volume range slider
                 volume.appendChild(controls.createRange.call(this, 'volume', extend(attributes, {
-                    id: 'plyr-volume-' + data.id
+                    id: 'ggs-plyr-volume-' + data.id
                 })));
 
                 this.elements.volume = volume;
@@ -2541,22 +2547,22 @@ typeof navigator === "object" && (function (global, factory) {
             // Settings button / menu
             if (this.config.controls.includes('settings') && !is.empty(this.config.settings)) {
                 var menu = createElement('div', {
-                    class: 'plyr__menu',
+                    class: 'ggs-plyr__menu',
                     hidden: ''
                 });
 
                 menu.appendChild(controls.createButton.call(this, 'settings', {
-                    id: 'plyr-settings-toggle-' + data.id,
+                    id: 'ggs-plyr-settings-toggle-' + data.id,
                     'aria-haspopup': true,
-                    'aria-controls': 'plyr-settings-' + data.id,
+                    'aria-controls': 'ggs-plyr-settings-' + data.id,
                     'aria-expanded': false
                 }));
 
                 var form = createElement('form', {
-                    class: 'plyr__menu__container',
-                    id: 'plyr-settings-' + data.id,
+                    class: 'ggs-plyr__menu__container',
+                    id: 'ggs-plyr-settings-' + data.id,
                     hidden: '',
-                    'aria-labelled-by': 'plyr-settings-toggle-' + data.id,
+                    'aria-labelled-by': 'ggs-plyr-settings-toggle-' + data.id,
                     role: 'tablist',
                     tabindex: -1
                 });
@@ -2564,8 +2570,8 @@ typeof navigator === "object" && (function (global, factory) {
                 var inner = createElement('div');
 
                 var home = createElement('div', {
-                    id: 'plyr-settings-' + data.id + '-home',
-                    'aria-labelled-by': 'plyr-settings-toggle-' + data.id,
+                    id: 'ggs-plyr-settings-' + data.id + '-home',
+                    'aria-labelled-by': 'ggs-plyr-settings-toggle-' + data.id,
                     role: 'tabpanel'
                 });
 
@@ -2584,9 +2590,9 @@ typeof navigator === "object" && (function (global, factory) {
                     var button = createElement('button', extend(getAttributesFromSelector(_this7.config.selectors.buttons.settings), {
                         type: 'button',
                         class: _this7.config.classNames.control + ' ' + _this7.config.classNames.control + '--forward',
-                        id: 'plyr-settings-' + data.id + '-' + type + '-tab',
+                        id: 'ggs-plyr-settings-' + data.id + '-' + type + '-tab',
                         'aria-haspopup': true,
-                        'aria-controls': 'plyr-settings-' + data.id + '-' + type,
+                        'aria-controls': 'ggs-plyr-settings-' + data.id + '-' + type,
                         'aria-expanded': false
                     }), i18n.get(type, _this7.config));
 
@@ -2610,9 +2616,9 @@ typeof navigator === "object" && (function (global, factory) {
                 // Build the panes
                 this.config.settings.forEach(function (type) {
                     var pane = createElement('div', {
-                        id: 'plyr-settings-' + data.id + '-' + type,
+                        id: 'ggs-plyr-settings-' + data.id + '-' + type,
                         hidden: '',
-                        'aria-labelled-by': 'plyr-settings-' + data.id + '-' + type + '-tab',
+                        'aria-labelled-by': 'ggs-plyr-settings-' + data.id + '-' + type + '-tab',
                         role: 'tabpanel',
                         tabindex: -1
                     });
@@ -2621,7 +2627,7 @@ typeof navigator === "object" && (function (global, factory) {
                         type: 'button',
                         class: _this7.config.classNames.control + ' ' + _this7.config.classNames.control + '--back',
                         'aria-haspopup': true,
-                        'aria-controls': 'plyr-settings-' + data.id + '-home',
+                        'aria-controls': 'ggs-plyr-settings-' + data.id + '-home',
                         'aria-expanded': false
                     }, i18n.get(type, _this7.config));
 
@@ -3355,7 +3361,8 @@ typeof navigator === "object" && (function (global, factory) {
         fullscreen: {
             enabled: true, // Allow fullscreen?
             fallback: true, // Fallback for vintage browsers
-            iosNative: false // Use the native fullscreen in iOS (disables custom controls)
+            iosNative: false, // Use the native fullscreen in iOS (disables custom controls)
+            dblclick: true // Toggle fullscreen on double click
         },
 
         // Local storage
@@ -3473,10 +3480,10 @@ typeof navigator === "object" && (function (global, factory) {
         // Change these to match your template if using custom HTML
         selectors: {
             editable: 'input, textarea, select, [contenteditable]',
-            container: '.plyr',
+            container: '.ggs-plyr',
             controls: {
                 container: null,
-                wrapper: '.plyr__controls'
+                wrapper: '.ggs-plyr__controls'
             },
             labels: '[data-plyr]',
             buttons: {
@@ -3501,15 +3508,15 @@ typeof navigator === "object" && (function (global, factory) {
                 quality: '[data-plyr="quality"]'
             },
             display: {
-                currentTime: '.plyr__time--current',
-                duration: '.plyr__time--duration',
-                buffer: '.plyr__progress__buffer',
-                loop: '.plyr__progress__loop', // Used later
-                volume: '.plyr__volume--display'
+                currentTime: '.ggs-plyr__time--current',
+                duration: '.ggs-plyr__time--duration',
+                buffer: '.ggs-plyr__progress__buffer',
+                loop: '.ggs-plyr__progress__loop', // Used later
+                volume: '.ggs-plyr__volume--display'
             },
-            progress: '.plyr__progress',
-            captions: '.plyr__captions',
-            caption: '.plyr__caption',
+            progress: '.ggs-plyr__progress',
+            captions: '.ggs-plyr__captions',
+            caption: '.ggs-plyr__caption',
             menu: {
                 quality: '.js-plyr__menu__list--quality'
             }
@@ -3517,51 +3524,51 @@ typeof navigator === "object" && (function (global, factory) {
 
         // Class hooks added to the player in different states
         classNames: {
-            type: 'plyr--{0}',
-            provider: 'plyr--{0}',
-            video: 'plyr__video-wrapper',
-            embed: 'plyr__video-embed',
-            embedContainer: 'plyr__video-embed__container',
-            poster: 'plyr__poster',
-            posterEnabled: 'plyr__poster-enabled',
-            ads: 'plyr__ads',
-            control: 'plyr__control',
-            controlPressed: 'plyr__control--pressed',
-            playing: 'plyr--playing',
-            paused: 'plyr--paused',
-            stopped: 'plyr--stopped',
-            loading: 'plyr--loading',
-            hover: 'plyr--hover',
-            tooltip: 'plyr__tooltip',
-            cues: 'plyr__cues',
-            hidden: 'plyr__sr-only',
-            hideControls: 'plyr--hide-controls',
-            isIos: 'plyr--is-ios',
-            isTouch: 'plyr--is-touch',
-            uiSupported: 'plyr--full-ui',
-            noTransition: 'plyr--no-transition',
+            type: 'ggs-plyr--{0}',
+            provider: 'ggs-plyr--{0}',
+            video: 'ggs-plyr__video-wrapper',
+            embed: 'ggs-plyr__video-embed',
+            embedContainer: 'ggs-plyr__video-embed__container',
+            poster: 'ggs-plyr__poster',
+            posterEnabled: 'ggs-plyr__poster-enabled',
+            ads: 'ggs-plyr__ads',
+            control: 'ggs-plyr__control',
+            controlPressed: 'ggs-plyr__control--pressed',
+            playing: 'ggs-plyr--playing',
+            paused: 'ggs-plyr--paused',
+            stopped: 'ggs-plyr--stopped',
+            loading: 'ggs-plyr--loading',
+            hover: 'ggs-plyr--hover',
+            tooltip: 'ggs-plyr__tooltip',
+            cues: 'ggs-plyr__cues',
+            hidden: 'ggs-plyr__sr-only',
+            hideControls: 'ggs-plyr--hide-controls',
+            isIos: 'ggs-plyr--is-ios',
+            isTouch: 'ggs-plyr--is-touch',
+            uiSupported: 'ggs-plyr--full-ui',
+            noTransition: 'ggs-plyr--no-transition',
             menu: {
-                value: 'plyr__menu__value',
-                badge: 'plyr__badge',
-                open: 'plyr--menu-open'
+                value: 'ggs-plyr__menu__value',
+                badge: 'ggs-plyr__badge',
+                open: 'ggs-plyr--menu-open'
             },
             captions: {
-                enabled: 'plyr--captions-enabled',
-                active: 'plyr--captions-active'
+                enabled: 'ggs-plyr--captions-enabled',
+                active: 'ggs-plyr--captions-active'
             },
             fullscreen: {
-                enabled: 'plyr--fullscreen-enabled',
-                fallback: 'plyr--fullscreen-fallback'
+                enabled: 'ggs-plyr--fullscreen-enabled',
+                fallback: 'ggs-plyr--fullscreen-fallback'
             },
             pip: {
-                supported: 'plyr--pip-supported',
-                active: 'plyr--pip-active'
+                supported: 'ggs-plyr--pip-supported',
+                active: 'ggs-plyr--pip-active'
             },
             airplay: {
-                supported: 'plyr--airplay-supported',
-                active: 'plyr--airplay-active'
+                supported: 'ggs-plyr--airplay-supported',
+                active: 'ggs-plyr--airplay-active'
             },
-            tabFocus: 'plyr__tab-focus'
+            tabFocus: 'ggs-plyr__tab-focus'
         },
 
         // Embed attributes
@@ -3694,7 +3701,7 @@ typeof navigator === "object" && (function (global, factory) {
         }
 
         // Toggle scroll
-        document.body.style.overflow = toggle ? 'hidden' : '';
+        toggle ? document.body.style.setProperty('overflow', 'hidden', 'important') : document.body.style.setProperty('overflow', '');
 
         // Toggle class hook
         toggleClass(this.target, this.player.config.classNames.fullscreen.fallback, toggle);
@@ -3728,6 +3735,9 @@ typeof navigator === "object" && (function (global, factory) {
 
             // Fullscreen toggle on double click
             on.call(this.player, this.player.elements.container, 'dblclick', function (event) {
+                if (!_this.player.config.fullscreen.dblclick) {
+                    return;
+                }
                 // Ignore double click in controls
                 if (is.element(_this.player.elements.controls) && _this.player.elements.controls.contains(event.target)) {
                     return;
@@ -4102,11 +4112,8 @@ typeof navigator === "object" && (function (global, factory) {
                     throw new Error('setPoster cancelled by later call to setPoster');
                 }
             }).then(function () {
-                Object.assign(_this2.elements.poster.style, {
-                    backgroundImage: 'url(\'' + poster + '\')',
-                    // Reset backgroundSize as well (since it can be set to "cover" for padded thumbnails for youtube)
-                    backgroundSize: ''
-                });
+                _this2.elements.poster.style.setProperty('background-image', 'url(\'' + poster + '\')', 'important');
+                _this2.elements.poster.style.setProperty('background-size', '');
                 ui.togglePoster.call(_this2, true);
                 return poster;
             });
@@ -4666,7 +4673,7 @@ typeof navigator === "object" && (function (global, factory) {
 
                     // Go back to home tab on click
                     var showHomeTab = function showHomeTab() {
-                        var id = 'plyr-settings-' + _this4.player.id + '-home';
+                        var id = 'ggs-plyr-settings-' + _this4.player.id + '-home';
                         controls.showTab.call(_this4.player, id);
                     };
 
@@ -5232,13 +5239,13 @@ typeof navigator === "object" && (function (global, factory) {
                 y = _split2[1];
 
             var padding = 100 / x * y;
-            this.elements.wrapper.style.paddingBottom = padding + '%';
+            this.elements.wrapper.style.setProperty('padding-bottom', padding + '%', 'important');
 
             if (this.supported.ui) {
                 var height = 240;
                 var offset = (height - padding) / (height / 50);
 
-                this.media.style.transform = 'translateY(-' + offset + '%)';
+                this.media.style.setProperty('transform', 'translateY(-' + offset + '%)', 'important');
             }
         },
 
@@ -5720,7 +5727,7 @@ typeof navigator === "object" && (function (global, factory) {
         // Set aspect ratio
         setAspectRatio: function setAspectRatio() {
             var ratio = this.config.ratio.split(':');
-            this.elements.wrapper.style.paddingBottom = 100 / ratio[0] * ratio[1] + '%';
+            this.elements.wrapper.style.setProperty('padding-bottom', 100 / ratio[0] * ratio[1] + '%', 'important');
         },
 
 
@@ -5772,7 +5779,7 @@ typeof navigator === "object" && (function (global, factory) {
             }).then(function (posterSrc) {
                 // If the image is padded, use background-size "cover" instead (like youtube does too with their posters)
                 if (!posterSrc.includes('maxres')) {
-                    player.elements.poster.style.backgroundSize = 'cover';
+                    player.elements.poster.style.setProperty('background-size', 'cover', 'important');
                 }
             }).catch(function () {});
 
@@ -6364,7 +6371,7 @@ typeof navigator === "object" && (function (global, factory) {
                                     class: _this6.player.config.classNames.cues
                                 });
 
-                                cue.style.left = cuePercentage.toString() + '%';
+                                cue.style.setProperty('left', cuePercentage.toString() + '%', 'important');
                                 seekElement.appendChild(cue);
                             }
                         }
@@ -6622,7 +6629,7 @@ typeof navigator === "object" && (function (global, factory) {
             key: 'resumeContent',
             value: function resumeContent() {
                 // Hide the advertisement container
-                this.elements.container.style.zIndex = '';
+                this.elements.container.style.setProperty('z-index', '');
 
                 // Ad is stopped
                 this.playing = false;
@@ -6641,7 +6648,7 @@ typeof navigator === "object" && (function (global, factory) {
             key: 'pauseContent',
             value: function pauseContent() {
                 // Show the advertisement container
-                this.elements.container.style.zIndex = 3;
+                this.elements.container.style.setProperty('z-index', 3, 'important');
 
                 // Ad is playing.
                 this.playing = true;
@@ -6946,6 +6953,43 @@ typeof navigator === "object" && (function (global, factory) {
     // Private properties
     // TODO: Use a WeakMap for private globals
     // const globals = new WeakMap();
+
+    var myDumpDiv = document.createElement('div');
+    var myDumpVideo = document.createElement('video');
+    var myDumpAudio = document.createElement('audio');
+    var myDumpInput = document.createElement('input');
+    var myDumpProgress = document.createElement('progress');
+
+    var myIsElm = function myIsElm(v) {
+        return is.element(v);
+    };
+    var myIsVideo = function myIsVideo(v) {
+        return myIsElm(v) && v.nodeName === 'VIDEO';
+    };
+    var myIsAudio = function myIsAudio(v) {
+        return myIsElm(v) && v.nodeName === 'AUDIO';
+    };
+    var myIsInput = function myIsInput(v) {
+        return myIsElm(v) && v.nodeName === 'INPUT';
+    };
+    var myIsProgress = function myIsProgress(v) {
+        return myIsElm(v) && v.nodeName === 'PROGRESS';
+    };
+
+    var myIsObject = function myIsObject(v) {
+        return v !== null && (typeof v === 'undefined' ? 'undefined' : _typeof(v)) === 'object';
+    };
+
+    var myMock = function myMock(obj) {
+        var keys = is.array(obj) ? Object.keys(obj) : Object.getOwnPropertyNames(obj);
+        var dumb = is.array(obj) ? [] : {};
+        for (var index = 0, length = keys.length; index !== length; index += 1) {
+            var key = keys[index];
+            var val = obj[key];
+            if (myIsVideo(val)) dumb[key] = myDumpVideo;else if (myIsAudio(val)) dumb[key] = myDumpAudio;else if (myIsInput(val)) dumb[key] = myDumpInput;else if (myIsProgress(val)) dumb[key] = myDumpProgress;else if (myIsElm(val)) dumb[key] = myDumpDiv;else if (myIsObject(val)) dumb[key] = myMock(val);else dumb[key] = val;
+        }
+        return dumb;
+    };
 
     // Plyr instance
 
@@ -7481,7 +7525,7 @@ typeof navigator === "object" && (function (global, factory) {
 
                 var done = function done() {
                     // Reset overflow (incase destroyed while in fullscreen)
-                    document.body.style.overflow = '';
+                    document.body.style.setProperty('overflow', '');
 
                     // GC for embed
                     _this2.embed = null;
@@ -7525,10 +7569,8 @@ typeof navigator === "object" && (function (global, factory) {
                         _this2.ready = false;
 
                         // Clear for garbage collection
-                        setTimeout(function () {
-                            _this2.elements = null;
-                            _this2.media = null;
-                        }, 200);
+                        _this2.elements = myMock(_this2.elements);
+                        _this2.media = myIsAudio(_this2.media) ? myDumpAudio : myDumpVideo;
                     }
                 };
 
