@@ -14,7 +14,7 @@ $plyr-preview-time-bg: rgba(0, 0, 0, 0.55);
 $plyr-preview-time-color: #fff;
 $plyr-preview-time-bottom-offset: 6px;
 
-.plyr__preview-thumb {
+.ggs-plyr__preview-thumb {
     background-color: $plyr-preview-bg;
     border-radius: 3px;
     bottom: 100%;
@@ -86,7 +86,7 @@ $plyr-preview-time-bottom-offset: 6px;
     }
 }
 
-.plyr__preview-scrubbing {
+.ggs-plyr__preview-scrubbing {
     bottom: 0;
     filter: blur(1px);
     height: 100%;
