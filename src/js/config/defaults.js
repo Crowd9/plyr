@@ -111,6 +111,7 @@ const defaults = {
         enabled: true, // Allow fullscreen?
         fallback: true, // Fallback using full viewport/window
         iosNative: false, // Use the native fullscreen in iOS (disables custom controls)
+        dblclick: true, // Toggle fullscreen on double click
     },
 
     // Local storage
