@@ -7,7 +7,7 @@
     display: none;
 }
 
-.plyr__captions {
+.ggs-plyr__captions {
     animation: plyr-fade-in 0.3s ease;
     bottom: 0;
     color: $plyr-captions-color;
@@ -20,7 +20,7 @@
     transition: transform 0.4s ease-in-out;
     width: 100%;
 
-    .plyr__caption {
+    .ggs-plyr__caption {
         background: $plyr-captions-bg;
         border-radius: 2px;
         box-decoration-break: clone;
@@ -48,12 +48,12 @@
     }
 }
 
-.plyr--captions-active .plyr__captions {
+.plyr--captions-active .ggs-plyr__captions {
     display: block;
 }
 
 // If the lower controls are shown and not empty
-.ggs-plyr:not(.plyr--hide-controls) .ggs-plyr__controls:not(:empty) ~ .plyr__captions {
+.ggs-plyr:not(.plyr--hide-controls) .ggs-plyr__controls:not(:empty) ~ .ggs-plyr__captions {
     transform: translateY(-($plyr-control-spacing * 4));
 }
 
