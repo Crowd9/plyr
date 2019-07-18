@@ -28,7 +28,7 @@
     }
 
     // Tab focus
-    &.plyr__tab-focus {
+    &.ggs-plyr__tab-focus {
         @include plyr-tab-focus();
     }
 }
@@ -53,7 +53,7 @@ a.ggs-plyr__control {
 
 // Audio control
 .plyr--audio .ggs-plyr__control {
-    &.plyr__tab-focus,
+    &.ggs-plyr__tab-focus,
     &:hover,
     &[aria-expanded='true'] {
         background: $plyr-audio-control-bg-hover;
@@ -64,7 +64,7 @@ a.ggs-plyr__control {
 // Video control
 .plyr--video .ggs-plyr__control {
     // Hover and tab focus
-    &.plyr__tab-focus,
+    &.ggs-plyr__tab-focus,
     &:hover,
     &[aria-expanded='true'] {
         background: $plyr-video-control-bg-hover;
