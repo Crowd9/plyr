@@ -311,8 +311,8 @@ const defaults = {
             quality: '[data-plyr="quality"]',
         },
         display: {
-            currentTime: '.plyr__time--current',
-            duration: '.plyr__time--duration',
+            currentTime: '.ggs-plyr__time--current',
+            duration: '.ggs-plyr__time--duration',
             buffer: '.plyr__progress__buffer',
             loop: '.plyr__progress__loop', // Used later
             volume: '.plyr__volume--display',
@@ -349,7 +349,7 @@ const defaults = {
         uiSupported: 'plyr--full-ui',
         noTransition: 'plyr--no-transition',
         display: {
-            time: 'plyr__time',
+            time: 'ggs-plyr__time',
         },
         menu: {
             value: 'plyr__menu__value',
