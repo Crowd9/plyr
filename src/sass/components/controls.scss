@@ -3,7 +3,7 @@
 // --------------------------------------------------------------
 
 // Hide native controls
-.plyr--full-ui ::-webkit-media-controls {
+.ggs-plyr--full-ui ::-webkit-media-controls {
     display: none;
 }
 
@@ -58,7 +58,7 @@
 }
 
 // Audio controls
-.plyr--audio .ggs-plyr__controls {
+.ggs-plyr--audio .ggs-plyr__controls {
     background: $plyr-audio-controls-bg;
     border-radius: inherit;
     color: $plyr-audio-control-color;
@@ -66,7 +66,7 @@
 }
 
 // Video controls
-.plyr--video .ggs-plyr__controls {
+.ggs-plyr--video .ggs-plyr__controls {
     background: linear-gradient(rgba($plyr-video-controls-bg, 0), rgba($plyr-video-controls-bg, 0.7));
     border-bottom-left-radius: inherit;
     border-bottom-right-radius: inherit;
@@ -85,7 +85,7 @@
 }
 
 // Hide video controls
-.plyr--video.plyr--hide-controls .ggs-plyr__controls {
+.ggs-plyr--video.ggs-plyr--hide-controls .ggs-plyr__controls {
     opacity: 0;
     pointer-events: none;
     transform: translateY(100%);

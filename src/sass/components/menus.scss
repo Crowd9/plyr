@@ -10,20 +10,20 @@
     .ggs-plyr__control svg {
         transition: transform 0.3s ease;
     }
-    .plyr__control[aria-expanded='true'] {
+    .ggs-plyr__control[aria-expanded='true'] {
         svg {
             transform: rotate(90deg);
         }
 
         // Hide tooltip
-        .plyr__tooltip {
+        .ggs-plyr__tooltip {
             display: none;
         }
     }
 
     // The actual menu container
     &__container {
-        animation: plyr-popup 0.2s ease;
+        animation: ggs-plyr-popup 0.2s ease;
         background: $plyr-menu-bg;
         border-radius: 4px;
         bottom: 100%;
@@ -141,7 +141,7 @@
             }
         }
 
-        .plyr__control[role='menuitemradio'] {
+        .ggs-plyr__control[role='menuitemradio'] {
             padding-left: $plyr-control-padding;
 
             &::before,

@@ -4,7 +4,7 @@
 
 // Base
 .ggs-plyr {
-    @include plyr-font-smoothing($plyr-font-smoothing);
+    @include ggs-plyr-font-smoothing($plyr-font-smoothing);
 
     direction: ltr;
     font-family: $plyr-font-family;
@@ -41,7 +41,7 @@
 // border-box everything
 // http://paulirish.com/2012/box-sizing-border-box-ftw/
 @if $plyr-border-box {
-    .plyr--full-ui {
+    .ggs-plyr--full-ui {
         box-sizing: border-box;
 
         *,
@@ -54,7 +54,7 @@
 
 // Fix 300ms delay
 @if $plyr-touch-action {
-    .plyr--full-ui {
+    .ggs-plyr--full-ui {
         a,
         button,
         input,

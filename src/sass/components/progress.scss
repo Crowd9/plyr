@@ -23,7 +23,7 @@ $plyr-progress-offset: $plyr-range-thumb-height;
     }
 
     // Seek tooltip to show time
-    .plyr__tooltip {
+    .ggs-plyr__tooltip {
         font-size: $plyr-font-size-time;
         left: 0;
     }
@@ -67,18 +67,18 @@ $plyr-progress-offset: $plyr-range-thumb-height;
     }
 }
 
-.plyr--video .ggs-plyr__progress__buffer {
+.ggs-plyr--video .ggs-plyr__progress__buffer {
     box-shadow: 0 1px 1px rgba(#000, 0.15);
     color: $plyr-video-progress-buffered-bg;
 }
 
-.plyr--audio .ggs-plyr__progress__buffer {
+.ggs-plyr--audio .ggs-plyr__progress__buffer {
     color: $plyr-audio-progress-buffered-bg;
 }
 
 // Loading state
-.plyr--loading .ggs-plyr__progress__buffer {
-    animation: plyr-progress 1s linear infinite;
+.ggs-plyr--loading .ggs-plyr__progress__buffer {
+    animation: ggs-plyr-progress 1s linear infinite;
     background-image: linear-gradient(
         -45deg,
         $plyr-progress-loading-bg 25%,
@@ -94,10 +94,10 @@ $plyr-progress-offset: $plyr-range-thumb-height;
     color: transparent;
 }
 
-.plyr--video.plyr--loading .ggs-plyr__progress__buffer {
+.ggs-plyr--video.ggs-plyr--loading .ggs-plyr__progress__buffer {
     background-color: $plyr-video-progress-buffered-bg;
 }
 
-.plyr--audio.plyr--loading .ggs-plyr__progress__buffer {
+.ggs-plyr--audio.ggs-plyr--loading .ggs-plyr__progress__buffer {
     background-color: $plyr-audio-progress-buffered-bg;
 }

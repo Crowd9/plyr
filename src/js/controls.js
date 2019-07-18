@@ -1318,7 +1318,7 @@ const controls = {
                 // Seek range slider
                 progress.appendChild(
                     createRange.call(this, 'seek', {
-                        id: `plyr-seek-${data.id}`,
+                        id: `ggs-plyr-seek-${data.id}`,
                     }),
                 );
 
@@ -1394,7 +1394,7 @@ const controls = {
                             this,
                             'volume',
                             extend(attributes, {
-                                id: `plyr-volume-${data.id}`,
+                                id: `ggs-plyr-volume-${data.id}`,
                             }),
                         ),
                     );
