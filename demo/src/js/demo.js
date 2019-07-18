@@ -47,9 +47,6 @@ import toggleClass from './toggle-class';
                 tooltips: {
                     controls: true,
                 },
-                captions: {
-                    active: true,
-                },
                 keys: {
                     google: 'AIzaSyDrNwtN3nLH_8rjCmu5Wq3ZCm4MNAVdc0c',
                 },
