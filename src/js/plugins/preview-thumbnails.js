@@ -594,8 +594,8 @@ class PreviewThumbnails {
     setThumbContainerSizeAndPos() {
         if (!this.sizeSpecifiedInCSS) {
             const thumbWidth = Math.floor(this.thumbContainerHeight * this.thumbAspectRatio);
-            this.elements.thumb.imageContainer.style.height = `${this.thumbContainerHeight}px`;
-            this.elements.thumb.imageContainer.style.width = `${thumbWidth}px`;
+            this.elements.thumb.imageContainer.style.setProperty('height', `${this.thumbContainerHeight}px`, 'important');
+            this.elements.thumb.imageContainer.style.setProperty('width', `${thumbWidth}px`, 'important');
         }
 
         this.setThumbContainerPos();
@@ -619,14 +619,14 @@ class PreviewThumbnails {
             previewPos = maxVal;
         }
 
-        container.style.left = `${previewPos}px`;
+        container.style.setProperty('left', `${previewPos}px`, 'important');
     }
 
     // Can't use 100% width, in case the video is a different aspect ratio to the video container
     setScrubbingContainerSize() {
-        this.elements.scrubbing.container.style.width = `${this.player.media.clientWidth}px`;
+        this.elements.scrubbing.container.style.setProperty('width', `${this.player.media.clientWidth}px`, 'important');
         // Can't use media.clientHeight - html5 video goes big and does black bars above and below
-        this.elements.scrubbing.container.style.height = `${this.player.media.clientWidth / this.thumbAspectRatio}px`;
+        this.elements.scrubbing.container.style.setProperty('height', `${this.player.media.clientWidth / this.thumbAspectRatio}px`, 'important');
     }
 
     // Sprites need to be offset to the correct location
@@ -639,13 +639,13 @@ class PreviewThumbnails {
         const multiplier = this.thumbContainerHeight / frame.h;
 
         // eslint-disable-next-line no-param-reassign
-        previewImage.style.height = `${Math.floor(previewImage.naturalHeight * multiplier)}px`;
+        previewImage.style.setProperty('height', `${Math.floor(previewImage.naturalHeight * multiplier)}px`, 'important');
         // eslint-disable-next-line no-param-reassign
-        previewImage.style.width = `${Math.floor(previewImage.naturalWidth * multiplier)}px`;
+        previewImage.style.setProperty('width', `${Math.floor(previewImage.naturalWidth * multiplier)}px`, 'important');
         // eslint-disable-next-line no-param-reassign
-        previewImage.style.left = `-${frame.x * multiplier}px`;
+        previewImage.style.setProperty('left', `-${frame.x * multiplier}px`, 'important');
         // eslint-disable-next-line no-param-reassign
-        previewImage.style.top = `-${frame.y * multiplier}px`;
+        previewImage.style.setProperty('top', `-${frame.y * multiplier}px`, 'important');
     }
 }
 
