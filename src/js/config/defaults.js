@@ -313,11 +313,11 @@ const defaults = {
         display: {
             currentTime: '.ggs-plyr__time--current',
             duration: '.ggs-plyr__time--duration',
-            buffer: '.plyr__progress__buffer',
-            loop: '.plyr__progress__loop', // Used later
+            buffer: '.ggs-plyr__progress__buffer',
+            loop: '.ggs-plyr__progress__loop', // Used later
             volume: '.plyr__volume--display',
         },
-        progress: '.plyr__progress',
+        progress: '.ggs-plyr__progress',
         captions: '.plyr__captions',
         caption: '.plyr__caption',
     },
