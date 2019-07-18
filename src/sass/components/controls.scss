@@ -42,11 +42,11 @@
             padding-left: 0;
         }
 
-        &.plyr__volume {
+        &.ggs-plyr__volume {
             padding-right: ($plyr-control-spacing / 2);
         }
 
-        &.plyr__volume:first-child {
+        &.ggs-plyr__volume:first-child {
             padding-right: 0;
         }
     }

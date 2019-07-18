@@ -315,7 +315,7 @@ const defaults = {
             duration: '.ggs-plyr__time--duration',
             buffer: '.ggs-plyr__progress__buffer',
             loop: '.ggs-plyr__progress__loop', // Used later
-            volume: '.plyr__volume--display',
+            volume: '.ggs-plyr__volume--display',
         },
         progress: '.ggs-plyr__progress',
         captions: '.plyr__captions',

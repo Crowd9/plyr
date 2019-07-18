@@ -2,7 +2,7 @@
 // Volume
 // --------------------------------------------------------------
 
-.plyr__volume {
+.ggs-plyr__volume {
     align-items: center;
     display: flex;
     flex: 1;
@@ -26,7 +26,7 @@
 // Hide sound controls on iOS
 // It's not supported to change volume using JavaScript:
 // https://developer.apple.com/library/safari/documentation/AudioVideo/Conceptual/Using_HTML5_Audio_Video/Device-SpecificConsiderations/Device-SpecificConsiderations.html
-.plyr--is-ios .plyr__volume {
+.plyr--is-ios .ggs-plyr__volume {
     display: none !important;
 }
 
