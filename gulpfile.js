@@ -173,6 +173,7 @@ Object.entries(build.js).forEach(([filename, entry]) => {
                     ),
                 )
                 .pipe(header('typeof navigator === "object" && ')) // "Support" SSR (#935)
+                .pipe(header(process.env.MARKER ? `console.info(${JSON.stringify(process.env.MARKER)}); ` : ''))
                 .pipe(
                     rename({
                         extname: `.${extension}`,
