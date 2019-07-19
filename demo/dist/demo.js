@@ -18298,7 +18298,7 @@ typeof navigator === "object" && (function () {
 	    var _this2 = this;
 
 	    // Navigate through menus via arrow keys and space
-	    on(menuItem, 'keydown keyup', function (event) {
+	    on.call(this, menuItem, 'keydown keyup', function (event) {
 	      // We only care about space and ⬆️ ⬇️️ ➡️
 	      if (![32, 38, 39, 40].includes(event.which)) {
 	        return;
@@ -18340,7 +18340,7 @@ typeof navigator === "object" && (function () {
 	    }, false); // Enter will fire a `click` event but we still need to manage focus
 	    // So we bind to keyup which fires after and set focus here
 
-	    on(menuItem, 'keyup', function (event) {
+	    on.call(this, menuItem, 'keyup', function (event) {
 	      if (event.which !== 13) {
 	        return;
 	      }
@@ -19245,7 +19245,7 @@ typeof navigator === "object" && (function () {
 
 	          bindMenuItemShortcuts.call(_this10, menuItem, type); // Show menu on click
 
-	          on(menuItem, 'click', function () {
+	          on.call(_this10, menuItem, 'click', function () {
 	            showMenuPanel.call(_this10, type, false);
 	          });
 	          var flex = createElement$1('span', null, i18n.get(type, _this10.config));
@@ -19276,7 +19276,7 @@ typeof navigator === "object" && (function () {
 	            class: _this10.config.classNames.hidden
 	          }, i18n.get('menuBack', _this10.config))); // Go back via keyboard
 
-	          on(pane, 'keydown', function (event) {
+	          on.call(_this10, pane, 'keydown', function (event) {
 	            // We only care about <-
 	            if (event.which !== 37) {
 	              return;
@@ -19289,7 +19289,7 @@ typeof navigator === "object" && (function () {
 	            showMenuPanel.call(_this10, 'home', true);
 	          }, false); // Go back via button click
 
-	          on(backButton, 'click', function () {
+	          on.call(_this10, backButton, 'click', function () {
 	            showMenuPanel.call(_this10, 'home', false);
 	          }); // Add to pane
 
