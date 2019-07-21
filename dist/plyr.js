@@ -4538,7 +4538,7 @@ typeof navigator === "object" && (function (global, factory) {
             } // Touch devices will just show controls (if hidden)
 
 
-            if (player.touch && player.config.hideControls) {
+            if (player.touch && player.config.hideControls && !player.stopped) {
               return;
             }
 
