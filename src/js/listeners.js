@@ -311,8 +311,15 @@ class Listeners {
             const [, y] = ratio;
             const [videoX, videoY] = getAspectRatio.call(player);
 
-            target.style.maxWidth = toggle ? `${(y / videoY) * videoX}px` : null;
-            target.style.margin = toggle ? '0 auto' : null;
+            if (toggle)
+                target.style.setProperty('max-width', `${(y / videoY) * videoX}px`, 'important');
+            else
+                target.style.maxWidth = '';
+
+            if (toggle)
+                target.style.setProperty('margin', '0 auto', 'important');
+            else
+                target.style.margin = '';
         };
 
         // Resize on fullscreen change
