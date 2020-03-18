@@ -47,10 +47,6 @@ import toggleClass from './toggle-class';
                 tooltips: {
                     controls: true,
                 },
-                ads: {
-                    enabled: env.prod || env.dev,
-                    publisherId: '918848828995742',
-                },
                 previewThumbnails: {
                     enabled: true,
                     src: [
