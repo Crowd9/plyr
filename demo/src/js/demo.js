@@ -46,10 +46,6 @@ import toggleClass from './toggle-class';
                 },
                 tooltips: {
                     controls: true,
-                },
-                vimeo: {
-                    // Prevent Vimeo blocking plyr.io demo site
-                    referrerPolicy: 'no-referrer',
                 }
             });
 
