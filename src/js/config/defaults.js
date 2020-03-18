@@ -358,7 +358,7 @@ const defaults = {
         },
         menu: {
             value: 'plyr__menu__value',
-            badge: 'plyr__badge',
+            badge: 'ggs-plyr__badge',
             open: 'plyr--menu-open',
         },
         captions: {
