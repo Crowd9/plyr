@@ -206,7 +206,7 @@ Object.entries(build.css).forEach(([filename, entry]) => {
                     cascade: false,
                 }),
             )
-            .pipe(clean())
+            .pipe(clean({ format: 'beautify' }))
             .pipe(size(sizeOptions))
             .pipe(gulp.dest(dist)),
     );
