@@ -4,14 +4,14 @@
 
 // Nicer focus styles
 // ---------------------------------------
-@mixin plyr-tab-focus($color: $plyr-tab-focus-default-color) {
+@mixin ggs-plyr-tab-focus($color: $plyr-tab-focus-default-color) {
     box-shadow: 0 0 0 5px rgba($color, 0.5);
     outline: 0;
 }
 
 // Font smoothing
 // ---------------------------------------
-@mixin plyr-font-smoothing($mode: true) {
+@mixin ggs-plyr-font-smoothing($mode: true) {
     @if $mode {
         -moz-osx-font-smoothing: grayscale;
         -webkit-font-smoothing: antialiased;
@@ -23,7 +23,7 @@
 
 // <input type="range"> styling
 // ---------------------------------------
-@mixin plyr-range-track() {
+@mixin ggs-plyr-range-track() {
     background: transparent;
     border: 0;
     border-radius: ($plyr-range-track-height / 2);
@@ -32,7 +32,7 @@
     user-select: none;
 }
 
-@mixin plyr-range-thumb() {
+@mixin ggs-plyr-range-thumb() {
     background: $plyr-range-thumb-bg;
     border: 0;
     border-radius: 100%;
@@ -43,13 +43,13 @@
     width: $plyr-range-thumb-height;
 }
 
-@mixin plyr-range-thumb-active($color: rgba($plyr-range-thumb-bg, 0.5)) {
+@mixin ggs-plyr-range-thumb-active($color: rgba($plyr-range-thumb-bg, 0.5)) {
     box-shadow: $plyr-range-thumb-shadow, 0 0 0 $plyr-range-thumb-active-shadow-width $color;
 }
 
 // Fullscreen styles
 // ---------------------------------------
-@mixin plyr-fullscreen-active() {
+@mixin ggs-plyr-fullscreen-active() {
     background: #000;
     border-radius: 0 !important;
     height: 100%;
@@ -60,13 +60,13 @@
         height: 100%;
     }
 
-    .plyr__video-wrapper {
+    .ggs-plyr__video-wrapper {
         height: 100%;
         position: static;
     }
 
     // Vimeo requires some different styling
-    &.plyr--vimeo .plyr__video-wrapper {
+    &.ggs-plyr--vimeo .ggs-plyr__video-wrapper {
         height: 0;
         position: relative;
         top: 50%;
@@ -83,7 +83,7 @@
     }
 
     // Hide cursor in fullscreen when controls hidden
-    &.plyr--hide-controls {
+    &.ggs-plyr--hide-controls {
         cursor: none;
     }
 
