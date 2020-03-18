@@ -137,14 +137,13 @@ Object.entries(build.js).forEach(([filename, entry]) => {
 
     formats.forEach(format => {
         const name = `js:${filename}:${format}`;
-        const extension = format === 'es' ? 'mjs' : 'js';
+        const extension = 'js';
         tasks.js.push(name);
 
         gulp.task(name, () =>
             gulp
                 .src(src)
                 .pipe(plumber())
-                .pipe(sourcemaps.init())
                 .pipe(
                     rollup(
                         {
@@ -181,10 +180,7 @@ Object.entries(build.js).forEach(([filename, entry]) => {
                 )
                 .pipe(gulp.dest(dist))
                 .pipe(filter(`**/*.${extension}`))
-                .pipe(terser())
-                .pipe(rename({ suffix: minSuffix }))
                 .pipe(size(sizeOptions))
-                .pipe(sourcemaps.write(''))
                 .pipe(gulp.dest(dist)),
         );
     });
