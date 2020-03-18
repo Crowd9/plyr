@@ -1,8 +1,5 @@
-typeof navigator === "object" && (function (Raven, Shr) {
+typeof navigator === "object" && (function () {
 	'use strict';
-
-	Raven = Raven && Raven.hasOwnProperty('default') ? Raven['default'] : Raven;
-	Shr = Shr && Shr.hasOwnProperty('default') ? Shr['default'] : Shr;
 
 	var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -10419,12 +10416,7 @@ typeof navigator === "object" && (function (Raven, Shr) {
 	    } // Set property synchronously to respect the call order
 
 
-	    this.media.setAttribute('poster', poster); // HTML5 uses native poster attribute
-
-	    if (this.isHTML5) {
-	      return Promise.resolve(poster);
-	    } // Wait until ui is ready
-
+	    this.media.setAttribute('poster', poster); // Wait until ui is ready
 
 	    return ready.call(this) // Load image
 	    .then(function () {
@@ -11312,12 +11304,10 @@ typeof navigator === "object" && (function (Raven, Shr) {
 
 	      wrap$1(this.media, this.elements.wrapper); // Faux poster container
 
-	      if (this.isEmbed) {
-	        this.elements.poster = createElement('div', {
-	          class: this.config.classNames.poster
-	        });
-	        this.elements.wrapper.appendChild(this.elements.poster);
-	      }
+	      this.elements.poster = createElement('div', {
+	        class: this.config.classNames.poster
+	      });
+	      this.elements.wrapper.appendChild(this.elements.poster);
 	    }
 
 	    if (this.isHTML5) {
@@ -12899,118 +12889,95 @@ typeof navigator === "object" && (function (Raven, Shr) {
 	  return element && element.classList[toggle ? 'add' : 'remove'](className);
 	};
 
-	(function () {
-	  var host = window.location.host;
-	  var env = {
-	    prod: host === 'plyr.io',
-	    dev: host === 'dev.plyr.io'
-	  };
-	  document.addEventListener('DOMContentLoaded', function () {
-	    Raven.context(function () {
-	      var selector = '#player'; // Setup share buttons
+	document.addEventListener('DOMContentLoaded', function () {
+	  var selector = '#player'; // Setup the player
 
-	      Shr.setup('.js-shr', {
-	        count: {
-	          className: 'button__count'
-	        },
-	        wrapper: {
-	          className: 'button--with-count'
-	        }
-	      }); // Setup the player
+	  var player = new Plyr(selector, {
+	    debug: true,
+	    title: 'View From A Blue Moon',
+	    iconUrl: 'dist/demo.svg',
+	    keyboard: {
+	      global: true
+	    },
+	    tooltips: {
+	      controls: true
+	    }
+	  }); // Expose for tinkering in the console
 
-	      var player = new Plyr(selector, {
-	        debug: true,
-	        title: 'View From A Blue Moon',
-	        iconUrl: 'dist/demo.svg',
-	        keyboard: {
-	          global: true
-	        },
-	        tooltips: {
-	          controls: true
-	        }
-	      }); // Expose for tinkering in the console
+	  window.plyr = player; // Setup type toggle
 
-	      window.player = player; // Setup type toggle
+	  var buttons = document.querySelectorAll('[data-source]');
+	  var types = Object.keys(sources);
+	  var historySupport = Boolean(window.history && window.history.pushState);
+	  var currentType = window.location.hash.substring(1);
+	  var hasCurrentType = !currentType.length;
 
-	      var buttons = document.querySelectorAll('[data-source]');
-	      var types = Object.keys(sources);
-	      var historySupport = Boolean(window.history && window.history.pushState);
-	      var currentType = window.location.hash.substring(1);
-	      var hasCurrentType = !currentType.length;
+	  function render(type) {
+	    // Remove active classes
+	    Array.from(buttons).forEach(function (button) {
+	      return toggleClass$1(button.parentElement, 'active', false);
+	    }); // Set active on parent
 
-	      function render(type) {
-	        // Remove active classes
-	        Array.from(buttons).forEach(function (button) {
-	          return toggleClass$1(button.parentElement, 'active', false);
-	        }); // Set active on parent
+	    toggleClass$1(document.querySelector("[data-source=\"".concat(type, "\"]")), 'active', true); // Show cite
 
-	        toggleClass$1(document.querySelector("[data-source=\"".concat(type, "\"]")), 'active', true); // Show cite
-
-	        Array.from(document.querySelectorAll('.plyr__cite')).forEach(function (cite) {
-	          // eslint-disable-next-line no-param-reassign
-	          cite.hidden = true;
-	        });
-	        document.querySelector(".plyr__cite--".concat(type)).hidden = false;
-	      } // Set a new source
-
-
-	      function setSource(type, init) {
-	        // Bail if new type isn't known, it's the current type, or current type is empty (video is default) and new type is video
-	        if (!types.includes(type) || !init && type === currentType || !currentType.length && type === 'video') {
-	          return;
-	        } // Set the new source
-
-
-	        player.source = sources[type]; // Set the current type for next time
-
-	        currentType = type;
-	        render(type);
-	      } // Bind to each button
-
-
-	      Array.from(buttons).forEach(function (button) {
-	        button.addEventListener('click', function () {
-	          var type = button.getAttribute('data-source');
-	          setSource(type);
-
-	          if (historySupport) {
-	            window.history.pushState({
-	              type: type
-	            }, '', "#".concat(type));
-	          }
-	        });
-	      }); // List for backwards/forwards
-
-	      window.addEventListener('popstate', function (event) {
-	        if (event.state && Object.keys(event.state).includes('type')) {
-	          setSource(event.state.type);
-	        }
-	      }); // If there's no current type set, assume video
-
-	      if (hasCurrentType) {
-	        currentType = 'video';
-	      } // Replace current history state
-
-
-	      if (historySupport && types.includes(currentType)) {
-	        window.history.replaceState({
-	          type: currentType
-	        }, '', hasCurrentType ? '' : "#".concat(currentType));
-	      } // If it's not video, load the source
-
-
-	      if (currentType !== 'video') {
-	        setSource(currentType, true);
-	      }
-
-	      render(currentType);
+	    Array.from(document.querySelectorAll('.plyr__cite')).forEach(function (cite) {
+	      // eslint-disable-next-line no-param-reassign
+	      cite.hidden = true;
 	    });
-	  }); // Raven / Sentry
-	  // For demo site (https://plyr.io) only
+	    document.querySelector(".plyr__cite--".concat(type)).hidden = false;
+	  } // Set a new source
 
-	  if (env.prod) {
-	    Raven.config('https://d4ad9866ad834437a4754e23937071e4@sentry.io/305555').install();
+
+	  function setSource(type, init) {
+	    // Bail if new type isn't known, it's the current type, or current type is empty (video is default) and new type is video
+	    if (!types.includes(type) || !init && type === currentType || !currentType.length && type === 'video') {
+	      return;
+	    } // Set the new source
+
+
+	    player.source = sources[type]; // Set the current type for next time
+
+	    currentType = type;
+	    render(type);
+	  } // Bind to each button
+
+
+	  Array.from(buttons).forEach(function (button) {
+	    button.addEventListener('click', function () {
+	      var type = button.getAttribute('data-source');
+	      setSource(type);
+
+	      if (historySupport) {
+	        window.history.pushState({
+	          type: type
+	        }, '', "#".concat(type));
+	      }
+	    });
+	  }); // List for backwards/forwards
+
+	  window.addEventListener('popstate', function (event) {
+	    if (event.state && Object.keys(event.state).includes('type')) {
+	      setSource(event.state.type);
+	    }
+	  }); // If there's no current type set, assume video
+
+	  if (hasCurrentType) {
+	    currentType = 'video';
+	  } // Replace current history state
+
+
+	  if (historySupport && types.includes(currentType)) {
+	    window.history.replaceState({
+	      type: currentType
+	    }, '', hasCurrentType ? '' : "#".concat(currentType));
+	  } // If it's not video, load the source
+
+
+	  if (currentType !== 'video') {
+	    setSource(currentType, true);
 	  }
-	})();
 
-}(Raven, Shr));
+	  render(currentType);
+	});
+
+}());
