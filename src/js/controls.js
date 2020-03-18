@@ -1301,7 +1301,7 @@ const controls = {
             // Progress
             if (control === 'progress') {
                 const progressContainer = createElement('div', {
-                    class: `${defaultAttributes.class} plyr__progress__container`,
+                    class: `${defaultAttributes.class} ggs-plyr__progress__container`,
                 });
 
                 const progress = createElement('div', getAttributesFromSelector(this.config.selectors.progress));

@@ -5,7 +5,7 @@
 // Offset the range thumb in order to be able to calculate the relative progress (#954)
 $plyr-progress-offset: $plyr-range-thumb-height;
 
-.plyr__progress {
+.ggs-plyr__progress {
     left: $plyr-progress-offset / 2;
     margin-right: $plyr-progress-offset;
     position: relative;
@@ -29,7 +29,7 @@ $plyr-progress-offset: $plyr-range-thumb-height;
     }
 }
 
-.plyr__progress__buffer {
+.ggs-plyr__progress__buffer {
     -webkit-appearance: none; /* stylelint-disable-line */
     background: transparent;
     border: 0;
@@ -68,7 +68,7 @@ $plyr-progress-offset: $plyr-range-thumb-height;
 }
 
 // Loading state
-.plyr--loading .plyr__progress__buffer {
+.plyr--loading .ggs-plyr__progress__buffer {
     animation: plyr-progress 1s linear infinite;
     background-image: linear-gradient(
         -45deg,
@@ -85,10 +85,10 @@ $plyr-progress-offset: $plyr-range-thumb-height;
     color: transparent;
 }
 
-.plyr--video.plyr--loading .plyr__progress__buffer {
+.plyr--video.plyr--loading .ggs-plyr__progress__buffer {
     background-color: $plyr-video-progress-buffered-bg;
 }
 
-.plyr--audio.plyr--loading .plyr__progress__buffer {
+.plyr--audio.plyr--loading .ggs-plyr__progress__buffer {
     background-color: $plyr-audio-progress-buffered-bg;
 }
