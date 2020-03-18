@@ -3694,7 +3694,7 @@ typeof navigator === "object" && (function (global, factory) {
         _this.toggle();
       }); // Tap focus when in fullscreen
 
-      on.call(this, this.player.elements.container, 'keydown', function (event) {
+      on.call(this.player, this.player.elements.container, 'keydown', function (event) {
         return _this.trapFocus(event);
       }); // Update the UI
 
@@ -4100,12 +4100,7 @@ typeof navigator === "object" && (function (global, factory) {
       } // Set property synchronously to respect the call order
 
 
-      this.media.setAttribute('poster', poster); // HTML5 uses native poster attribute
-
-      if (this.isHTML5) {
-        return Promise.resolve(poster);
-      } // Wait until ui is ready
-
+      this.media.setAttribute('poster', poster); // Wait until ui is ready
 
       return ready.call(this) // Load image
       .then(function () {
@@ -4586,7 +4581,7 @@ typeof navigator === "object" && (function (global, factory) {
             } // Touch devices will just show controls (if hidden)
 
 
-            if (player.touch && player.config.hideControls) {
+            if (player.touch && player.config.hideControls && !player.stopped) {
               return;
             }
 
@@ -4994,12 +4989,10 @@ typeof navigator === "object" && (function (global, factory) {
 
         wrap(this.media, this.elements.wrapper); // Faux poster container
 
-        if (this.isEmbed) {
-          this.elements.poster = createElement('div', {
-            class: this.config.classNames.poster
-          });
-          this.elements.wrapper.appendChild(this.elements.poster);
-        }
+        this.elements.poster = createElement('div', {
+          class: this.config.classNames.poster
+        });
+        this.elements.wrapper.appendChild(this.elements.poster);
       }
 
       if (this.isHTML5) {
