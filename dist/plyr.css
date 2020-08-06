@@ -292,7 +292,6 @@
   font-size: 14px;
   padding: 4px 11px;
   -webkit-user-select: none;
-  -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
   width: 100%
@@ -414,6 +413,7 @@
   border: 0;
   border-radius: 2.5px;
   height: 5px;
+  -webkit-transition: box-shadow .3s ease;
   transition: box-shadow .3s ease;
   -webkit-user-select: none;
   user-select: none;
@@ -426,6 +426,7 @@
   box-shadow: 0 1px 1px rgba(0,0,0,.15),0 0 0 1px rgba(35,41,47,.2);
   height: 13px;
   position: relative;
+  -webkit-transition: all .2s ease;
   transition: all .2s ease;
   width: 13px;
   -webkit-appearance: none;
@@ -436,8 +437,8 @@
   border: 0;
   border-radius: 2.5px;
   height: 5px;
+  -moz-transition: box-shadow .3s ease;
   transition: box-shadow .3s ease;
-  -moz-user-select: none;
   user-select: none
 }
 .ggsi .ggs-plyr--full-ui input[type=range]::-moz-range-thumb {
@@ -447,6 +448,7 @@
   box-shadow: 0 1px 1px rgba(0,0,0,.15),0 0 0 1px rgba(35,41,47,.2);
   height: 13px;
   position: relative;
+  -moz-transition: all .2s ease;
   transition: all .2s ease;
   width: 13px
 }
@@ -460,6 +462,7 @@
   border: 0;
   border-radius: 2.5px;
   height: 5px;
+  -ms-transition: box-shadow .3s ease;
   transition: box-shadow .3s ease;
   -ms-user-select: none;
   user-select: none;
@@ -470,6 +473,7 @@
   border: 0;
   border-radius: 2.5px;
   height: 5px;
+  -ms-transition: box-shadow .3s ease;
   transition: box-shadow .3s ease;
   -ms-user-select: none;
   user-select: none
@@ -479,6 +483,7 @@
   border: 0;
   border-radius: 2.5px;
   height: 5px;
+  -ms-transition: box-shadow .3s ease;
   transition: box-shadow .3s ease;
   -ms-user-select: none;
   user-select: none;
@@ -491,6 +496,7 @@
   box-shadow: 0 1px 1px rgba(0,0,0,.15),0 0 0 1px rgba(35,41,47,.2);
   height: 13px;
   position: relative;
+  -ms-transition: all .2s ease;
   transition: all .2s ease;
   width: 13px;
   margin-top: 0
@@ -686,7 +692,6 @@
   position: absolute;
   top: 0;
   -webkit-user-select: none;
-  -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
   width: 100%
@@ -734,16 +739,19 @@
   background: currentColor;
   border-radius: 100px;
   min-width: 5px;
+  -webkit-transition: width .2s ease;
   transition: width .2s ease
 }
 .ggsi .ggs-plyr__progress__buffer::-moz-progress-bar {
   background: currentColor;
   border-radius: 100px;
   min-width: 5px;
+  -moz-transition: width .2s ease;
   transition: width .2s ease
 }
 .ggsi .ggs-plyr__progress__buffer::-ms-fill {
   border-radius: 100px;
+  -ms-transition: width .2s ease;
   transition: width .2s ease
 }
 .ggsi .ggs-plyr--video .ggs-plyr__progress__buffer {

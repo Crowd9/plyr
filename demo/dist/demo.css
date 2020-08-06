@@ -367,7 +367,6 @@ h1 {
   position: relative !important;
   text-shadow: none !important;
   -webkit-user-select: none !important;
-  -moz-user-select: none !important;
   -ms-user-select: none !important;
   user-select: none !important;
   vertical-align: middle !important
@@ -866,7 +865,6 @@ nav {
   font-size: 13px !important;
   padding: 4px 11px !important;
   -webkit-user-select: none !important;
-  -moz-user-select: none !important;
   -ms-user-select: none !important;
   user-select: none !important;
   width: 100% !important
@@ -988,6 +986,7 @@ nav {
   border: 0 !important;
   border-radius: 2.5px !important;
   height: 5px !important;
+  -webkit-transition: box-shadow .3s ease !important;
   transition: box-shadow .3s ease !important;
   -webkit-user-select: none !important;
   user-select: none !important;
@@ -1000,6 +999,7 @@ nav {
   box-shadow: 0 1px 1px rgba(0,0,0,.15),0 0 0 1px rgba(35,41,47,.2) !important;
   height: 13px !important;
   position: relative !important;
+  -webkit-transition: all .2s ease !important;
   transition: all .2s ease !important;
   width: 13px !important;
   -webkit-appearance: none !important;
@@ -1010,8 +1010,8 @@ nav {
   border: 0 !important;
   border-radius: 2.5px !important;
   height: 5px !important;
+  -moz-transition: box-shadow .3s ease !important;
   transition: box-shadow .3s ease !important;
-  -moz-user-select: none !important;
   user-select: none !important
 }
 .ggsi .ggs-plyr--full-ui input[type=range]::-moz-range-thumb {
@@ -1021,6 +1021,7 @@ nav {
   box-shadow: 0 1px 1px rgba(0,0,0,.15),0 0 0 1px rgba(35,41,47,.2) !important;
   height: 13px !important;
   position: relative !important;
+  -moz-transition: all .2s ease !important;
   transition: all .2s ease !important;
   width: 13px !important
 }
@@ -1034,6 +1035,7 @@ nav {
   border: 0 !important;
   border-radius: 2.5px !important;
   height: 5px !important;
+  -ms-transition: box-shadow .3s ease !important;
   transition: box-shadow .3s ease !important;
   -ms-user-select: none !important;
   user-select: none !important;
@@ -1044,6 +1046,7 @@ nav {
   border: 0 !important;
   border-radius: 2.5px !important;
   height: 5px !important;
+  -ms-transition: box-shadow .3s ease !important;
   transition: box-shadow .3s ease !important;
   -ms-user-select: none !important;
   user-select: none !important
@@ -1053,6 +1056,7 @@ nav {
   border: 0 !important;
   border-radius: 2.5px !important;
   height: 5px !important;
+  -ms-transition: box-shadow .3s ease !important;
   transition: box-shadow .3s ease !important;
   -ms-user-select: none !important;
   user-select: none !important;
@@ -1065,6 +1069,7 @@ nav {
   box-shadow: 0 1px 1px rgba(0,0,0,.15),0 0 0 1px rgba(35,41,47,.2) !important;
   height: 13px !important;
   position: relative !important;
+  -ms-transition: all .2s ease !important;
   transition: all .2s ease !important;
   width: 13px !important;
   margin-top: 0 !important
@@ -1260,7 +1265,6 @@ nav {
   position: absolute !important;
   top: 0 !important;
   -webkit-user-select: none !important;
-  -moz-user-select: none !important;
   -ms-user-select: none !important;
   user-select: none !important;
   width: 100% !important
@@ -1308,16 +1312,19 @@ nav {
   background: currentColor !important;
   border-radius: 100px !important;
   min-width: 5px !important;
+  -webkit-transition: width .2s ease !important;
   transition: width .2s ease !important
 }
 .ggsi .ggs-plyr__progress__buffer::-moz-progress-bar {
   background: currentColor !important;
   border-radius: 100px !important;
   min-width: 5px !important;
+  -moz-transition: width .2s ease !important;
   transition: width .2s ease !important
 }
 .ggsi .ggs-plyr__progress__buffer::-ms-fill {
   border-radius: 100px !important;
+  -ms-transition: width .2s ease !important;
   transition: width .2s ease !important
 }
 .ggsi .ggs-plyr--video .ggs-plyr__progress__buffer {
