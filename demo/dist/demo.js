@@ -214,7 +214,7 @@ typeof navigator === "object" && (function () {
 	(module.exports = function (key, value) {
 	  return sharedStore[key] || (sharedStore[key] = value !== undefined ? value : {});
 	})('versions', []).push({
-	  version: '3.6.4',
+	  version: '3.6.5',
 	  mode:  'global',
 	  copyright: '© 2020 Denis Pushkarev (zloirock.ru)'
 	});
@@ -3191,7 +3191,7 @@ typeof navigator === "object" && (function () {
 	var INVALID_PORT = 'Invalid port';
 
 	var ALPHA = /[A-Za-z]/;
-	var ALPHANUMERIC = /[\d+\-.A-Za-z]/;
+	var ALPHANUMERIC = /[\d+-.A-Za-z]/;
 	var DIGIT = /\d/;
 	var HEX_START = /^(0x|0X)/;
 	var OCT = /^[0-7]+$/;
@@ -4254,19 +4254,15 @@ typeof navigator === "object" && (function () {
 	}
 
 	function _slicedToArray(arr, i) {
-	  return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
+	  return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
 	}
 
 	function _toConsumableArray(arr) {
-	  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
+	  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
 	}
 
 	function _arrayWithoutHoles(arr) {
-	  if (Array.isArray(arr)) {
-	    for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
-
-	    return arr2;
-	  }
+	  if (Array.isArray(arr)) return _arrayLikeToArray(arr);
 	}
 
 	function _arrayWithHoles(arr) {
@@ -4274,14 +4270,11 @@ typeof navigator === "object" && (function () {
 	}
 
 	function _iterableToArray(iter) {
-	  if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+	  if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
 	}
 
 	function _iterableToArrayLimit(arr, i) {
-	  if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
-	    return;
-	  }
-
+	  if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
 	  var _arr = [];
 	  var _n = true;
 	  var _d = false;
@@ -4307,12 +4300,29 @@ typeof navigator === "object" && (function () {
 	  return _arr;
 	}
 
+	function _unsupportedIterableToArray(o, minLen) {
+	  if (!o) return;
+	  if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+	  var n = Object.prototype.toString.call(o).slice(8, -1);
+	  if (n === "Object" && o.constructor) n = o.constructor.name;
+	  if (n === "Map" || n === "Set") return Array.from(o);
+	  if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+	}
+
+	function _arrayLikeToArray(arr, len) {
+	  if (len == null || len > arr.length) len = arr.length;
+
+	  for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+	  return arr2;
+	}
+
 	function _nonIterableSpread() {
-	  throw new TypeError("Invalid attempt to spread non-iterable instance");
+	  throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 	}
 
 	function _nonIterableRest() {
-	  throw new TypeError("Invalid attempt to destructure non-iterable instance");
+	  throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 	}
 
 	(function (global) {
@@ -4492,7 +4502,7 @@ typeof navigator === "object" && (function () {
 	  var checkIfURLSearchParamsSupported = function checkIfURLSearchParamsSupported() {
 	    try {
 	      var URLSearchParams = global.URLSearchParams;
-	      return new URLSearchParams('?a=1').toString() === 'a=1' && typeof URLSearchParams.prototype.set === 'function';
+	      return new URLSearchParams('?a=1').toString() === 'a=1' && typeof URLSearchParams.prototype.set === 'function' && typeof URLSearchParams.prototype.entries === 'function';
 	    } catch (e) {
 	      return false;
 	    }
@@ -4616,7 +4626,11 @@ typeof navigator === "object" && (function () {
 	        anchorElement.href = anchorElement.href; // force href to refresh
 	      }
 
-	      if (anchorElement.protocol === ':' || !/:/.test(anchorElement.href)) {
+	      var inputElement = doc.createElement('input');
+	      inputElement.type = 'url';
+	      inputElement.value = url;
+
+	      if (anchorElement.protocol === ':' || !/:/.test(anchorElement.href) || !inputElement.checkValidity() && !base) {
 	        throw new TypeError('Invalid URL');
 	      }
 
@@ -5541,7 +5555,13 @@ typeof navigator === "object" && (function () {
 	    defer = functionBindContext(port.postMessage, port, 1);
 	  // Browsers with postMessage, skip WebWorkers
 	  // IE8 has postMessage, but it's sync & typeof its postMessage is 'object'
-	  } else if (global_1.addEventListener && typeof postMessage == 'function' && !global_1.importScripts && !fails(post)) {
+	  } else if (
+	    global_1.addEventListener &&
+	    typeof postMessage == 'function' &&
+	    !global_1.importScripts &&
+	    !fails(post) &&
+	    location.protocol !== 'file:'
+	  ) {
 	    defer = post;
 	    global_1.addEventListener('message', listener, false);
 	  // IE8-
@@ -7039,9 +7059,7 @@ typeof navigator === "object" && (function () {
 	// ==========================================================================
 	var noop = function noop() {};
 
-	var Console =
-	/*#__PURE__*/
-	function () {
+	var Console = /*#__PURE__*/function () {
 	  function Console() {
 	    var enabled = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
 
@@ -7123,106 +7141,37 @@ typeof navigator === "object" && (function () {
 	  }
 	});
 
-	var defaults$1 = {
-	  addCSS: true,
-	  // Add CSS to the element to improve usability (required here or in your CSS!)
-	  thumbWidth: 15,
-	  // The width of the thumb handle
-	  watch: true // Watch for new elements that match a string target
+	var nativeGetOwnPropertyDescriptor$2 = objectGetOwnPropertyDescriptor.f;
 
-	};
 
-	// Element matches a selector
-	function matches(element, selector) {
+	var FAILS_ON_PRIMITIVES$2 = fails(function () { nativeGetOwnPropertyDescriptor$2(1); });
+	var FORCED$4 = !descriptors || FAILS_ON_PRIMITIVES$2;
 
-	  function match() {
-	    return Array.from(document.querySelectorAll(selector)).includes(this);
+	// `Object.getOwnPropertyDescriptor` method
+	// https://tc39.github.io/ecma262/#sec-object.getownpropertydescriptor
+	_export({ target: 'Object', stat: true, forced: FORCED$4, sham: !descriptors }, {
+	  getOwnPropertyDescriptor: function getOwnPropertyDescriptor(it, key) {
+	    return nativeGetOwnPropertyDescriptor$2(toIndexedObject(it), key);
 	  }
+	});
 
-	  var matches =  match;
-	  return matches.call(element, selector);
-	}
-
-	// Trigger event
-	function trigger(element, type) {
-	  if (!element || !type) {
-	    return;
-	  } // Create and dispatch the event
-
-
-	  var event = new Event(type); // Dispatch the event
-
-	  element.dispatchEvent(event);
-	}
-
-	// ==========================================================================
-	// Type checking utils
-	// ==========================================================================
-	var getConstructor$1 = function getConstructor(input) {
-	  return input !== null && typeof input !== 'undefined' ? input.constructor : null;
-	};
-
-	var instanceOf$1 = function instanceOf(input, constructor) {
-	  return Boolean(input && constructor && input instanceof constructor);
-	};
-
-	var isNullOrUndefined$1 = function isNullOrUndefined(input) {
-	  return input === null || typeof input === 'undefined';
-	};
-
-	var isObject$2 = function isObject(input) {
-	  return getConstructor$1(input) === Object;
-	};
-
-	var isNumber$1 = function isNumber(input) {
-	  return getConstructor$1(input) === Number && !Number.isNaN(input);
-	};
-
-	var isString$1 = function isString(input) {
-	  return getConstructor$1(input) === String;
-	};
-
-	var isBoolean$1 = function isBoolean(input) {
-	  return getConstructor$1(input) === Boolean;
-	};
-
-	var isFunction$1 = function isFunction(input) {
-	  return getConstructor$1(input) === Function;
-	};
-
-	var isArray$2 = function isArray(input) {
-	  return Array.isArray(input);
-	};
-
-	var isNodeList$1 = function isNodeList(input) {
-	  return instanceOf$1(input, NodeList);
-	};
-
-	var isElement$1 = function isElement(input) {
-	  return instanceOf$1(input, Element);
-	};
-
-	var isEvent$1 = function isEvent(input) {
-	  return instanceOf$1(input, Event);
-	};
-
-	var isEmpty$1 = function isEmpty(input) {
-	  return isNullOrUndefined$1(input) || (isString$1(input) || isArray$2(input) || isNodeList$1(input)) && !input.length || isObject$2(input) && !Object.keys(input).length;
-	};
-
-	var is$1 = {
-	  nullOrUndefined: isNullOrUndefined$1,
-	  object: isObject$2,
-	  number: isNumber$1,
-	  string: isString$1,
-	  boolean: isBoolean$1,
-	  function: isFunction$1,
-	  array: isArray$2,
-	  nodeList: isNodeList$1,
-	  element: isElement$1,
-	  event: isEvent$1,
-	  empty: isEmpty$1
-	};
+	// `Object.getOwnPropertyDescriptors` method
+	// https://tc39.github.io/ecma262/#sec-object.getownpropertydescriptors
+	_export({ target: 'Object', stat: true, sham: !descriptors }, {
+	  getOwnPropertyDescriptors: function getOwnPropertyDescriptors(object) {
+	    var O = toIndexedObject(object);
+	    var getOwnPropertyDescriptor = objectGetOwnPropertyDescriptor.f;
+	    var keys = ownKeys(O);
+	    var result = {};
+	    var index = 0;
+	    var key, descriptor;
+	    while (keys.length > index) {
+	      descriptor = getOwnPropertyDescriptor(O, key = keys[index++]);
+	      if (descriptor !== undefined) createProperty(result, key, descriptor);
+	    }
+	    return result;
+	  }
+	});
 
 	// @@match logic
 	fixRegexpWellKnownSymbolLogic('match', 1, function (MATCH, nativeMatch, maybeCallNative) {
@@ -7261,219 +7210,222 @@ typeof navigator === "object" && (function () {
 	  ];
 	});
 
-	// Get the number of decimal places
-	function getDecimalPlaces(value) {
-	  var match = "".concat(value).match(/(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/);
-
-	  if (!match) {
-	    return 0;
-	  }
-
-	  return Math.max(0, // Number of digits right of decimal point.
-	  (match[1] ? match[1].length : 0) - ( // Adjust for scientific notation.
-	  match[2] ? +match[2] : 0));
-	} // Round to the nearest step
-
-	function round(number, step) {
-	  if (step < 1) {
-	    var places = getDecimalPlaces(step);
-	    return parseFloat(number.toFixed(places));
-	  }
-
-	  return Math.round(number / step) * step;
+	function _classCallCheck$1(e, t) {
+	  if (!(e instanceof t)) throw new TypeError("Cannot call a class as a function");
 	}
 
-	var RangeTouch =
-	/*#__PURE__*/
-	function () {
-	  /**
-	   * Setup a new instance
-	   * @param {String|Element} target
-	   * @param {Object} options
-	   */
-	  function RangeTouch(target, options) {
-	    _classCallCheck(this, RangeTouch);
+	function _defineProperties$1(e, t) {
+	  for (var n = 0; n < t.length; n++) {
+	    var r = t[n];
+	    r.enumerable = r.enumerable || !1, r.configurable = !0, "value" in r && (r.writable = !0), Object.defineProperty(e, r.key, r);
+	  }
+	}
 
-	    if (is$1.element(target)) {
-	      // An Element is passed, use it directly
-	      this.element = target;
-	    } else if (is$1.string(target)) {
-	      // A CSS Selector is passed, fetch it from the DOM
-	      this.element = document.querySelector(target);
-	    }
+	function _createClass$1(e, t, n) {
+	  return t && _defineProperties$1(e.prototype, t), n && _defineProperties$1(e, n), e;
+	}
 
-	    if (!is$1.element(this.element) || !is$1.empty(this.element.rangeTouch)) {
-	      return;
-	    }
+	function _defineProperty$1(e, t, n) {
+	  return t in e ? Object.defineProperty(e, t, {
+	    value: n,
+	    enumerable: !0,
+	    configurable: !0,
+	    writable: !0
+	  }) : e[t] = n, e;
+	}
 
-	    this.config = Object.assign({}, defaults$1, options);
-	    this.init();
+	function ownKeys$2(e, t) {
+	  var n = Object.keys(e);
+
+	  if (Object.getOwnPropertySymbols) {
+	    var r = Object.getOwnPropertySymbols(e);
+	    t && (r = r.filter(function (t) {
+	      return Object.getOwnPropertyDescriptor(e, t).enumerable;
+	    })), n.push.apply(n, r);
 	  }
 
-	  _createClass(RangeTouch, [{
+	  return n;
+	}
+
+	function _objectSpread2$1(e) {
+	  for (var t = 1; t < arguments.length; t++) {
+	    var n = null != arguments[t] ? arguments[t] : {};
+	    t % 2 ? ownKeys$2(Object(n), !0).forEach(function (t) {
+	      _defineProperty$1(e, t, n[t]);
+	    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : ownKeys$2(Object(n)).forEach(function (t) {
+	      Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
+	    });
+	  }
+
+	  return e;
+	}
+
+	var defaults$1 = {
+	  addCSS: !0,
+	  thumbWidth: 15,
+	  watch: !0
+	};
+
+	function matches(e, t) {
+	  return function () {
+	    return Array.from(document.querySelectorAll(t)).includes(this);
+	  }.call(e, t);
+	}
+
+	function trigger(e, t) {
+	  if (e && t) {
+	    var n = new Event(t, {
+	      bubbles: !0
+	    });
+	    e.dispatchEvent(n);
+	  }
+	}
+
+	var getConstructor$1 = function getConstructor(e) {
+	  return null != e ? e.constructor : null;
+	},
+	    instanceOf$1 = function instanceOf(e, t) {
+	  return !!(e && t && e instanceof t);
+	},
+	    isNullOrUndefined$1 = function isNullOrUndefined(e) {
+	  return null == e;
+	},
+	    isObject$2 = function isObject(e) {
+	  return getConstructor$1(e) === Object;
+	},
+	    isNumber$1 = function isNumber(e) {
+	  return getConstructor$1(e) === Number && !Number.isNaN(e);
+	},
+	    isString$1 = function isString(e) {
+	  return getConstructor$1(e) === String;
+	},
+	    isBoolean$1 = function isBoolean(e) {
+	  return getConstructor$1(e) === Boolean;
+	},
+	    isFunction$1 = function isFunction(e) {
+	  return getConstructor$1(e) === Function;
+	},
+	    isArray$2 = function isArray(e) {
+	  return Array.isArray(e);
+	},
+	    isNodeList$1 = function isNodeList(e) {
+	  return instanceOf$1(e, NodeList);
+	},
+	    isElement$1 = function isElement(e) {
+	  return instanceOf$1(e, Element);
+	},
+	    isEvent$1 = function isEvent(e) {
+	  return instanceOf$1(e, Event);
+	},
+	    isEmpty$1 = function isEmpty(e) {
+	  return isNullOrUndefined$1(e) || (isString$1(e) || isArray$2(e) || isNodeList$1(e)) && !e.length || isObject$2(e) && !Object.keys(e).length;
+	},
+	    is$1 = {
+	  nullOrUndefined: isNullOrUndefined$1,
+	  object: isObject$2,
+	  number: isNumber$1,
+	  string: isString$1,
+	  boolean: isBoolean$1,
+	  function: isFunction$1,
+	  array: isArray$2,
+	  nodeList: isNodeList$1,
+	  element: isElement$1,
+	  event: isEvent$1,
+	  empty: isEmpty$1
+	};
+
+	function getDecimalPlaces(e) {
+	  var t = "".concat(e).match(/(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/);
+	  return t ? Math.max(0, (t[1] ? t[1].length : 0) - (t[2] ? +t[2] : 0)) : 0;
+	}
+
+	function round(e, t) {
+	  if (1 > t) {
+	    var n = getDecimalPlaces(t);
+	    return parseFloat(e.toFixed(n));
+	  }
+
+	  return Math.round(e / t) * t;
+	}
+
+	var RangeTouch = function () {
+	  function e(t, n) {
+	    _classCallCheck$1(this, e), is$1.element(t) ? this.element = t : is$1.string(t) && (this.element = document.querySelector(t)), is$1.element(this.element) && is$1.empty(this.element.rangeTouch) && (this.config = _objectSpread2$1({}, defaults$1, {}, n), this.init());
+	  }
+
+	  return _createClass$1(e, [{
 	    key: "init",
-	    value: function init() {
-	      // Bail if not a touch enabled device
-	      if (!RangeTouch.enabled) {
-	        return;
-	      } // Add useful CSS
-
-
-	      if (this.config.addCSS) {
-	        // TODO: Restore original values on destroy
-	        this.element.style.userSelect = 'none';
-	        this.element.style.webKitUserSelect = 'none';
-	        this.element.style.touchAction = 'manipulation';
-	      }
-
-	      this.listeners(true);
-	      this.element.rangeTouch = this;
+	    value: function value() {
+	      e.enabled && (this.config.addCSS && (this.element.style.userSelect = "none", this.element.style.webKitUserSelect = "none", this.element.style.touchAction = "manipulation"), this.listeners(!0), this.element.rangeTouch = this);
 	    }
 	  }, {
 	    key: "destroy",
-	    value: function destroy() {
-	      // Bail if not a touch enabled device
-	      if (!RangeTouch.enabled) {
-	        return;
-	      }
-
-	      this.listeners(false);
-	      this.element.rangeTouch = null;
+	    value: function value() {
+	      e.enabled && (this.config.addCSS && (this.element.style.userSelect = "", this.element.style.webKitUserSelect = "", this.element.style.touchAction = ""), this.listeners(!1), this.element.rangeTouch = null);
 	    }
 	  }, {
 	    key: "listeners",
-	    value: function listeners(toggle) {
-	      var _this = this;
-
-	      var method = toggle ? 'addEventListener' : 'removeEventListener'; // Listen for events
-
-	      ['touchstart', 'touchmove', 'touchend'].forEach(function (type) {
-	        _this.element[method](type, function (event) {
-	          return _this.set(event);
-	        }, false);
+	    value: function value(e) {
+	      var t = this,
+	          n = e ? "addEventListener" : "removeEventListener";
+	      ["touchstart", "touchmove", "touchend"].forEach(function (e) {
+	        t.element[n](e, function (e) {
+	          return t.set(e);
+	        }, !1);
 	      });
 	    }
-	    /**
-	     * Get the value based on touch position
-	     * @param {Event} event
-	     */
-
 	  }, {
 	    key: "get",
-	    value: function get(event) {
-	      if (!RangeTouch.enabled || !is$1.event(event)) {
-	        return null;
-	      }
-
-	      var input = event.target;
-	      var touch = event.changedTouches[0];
-	      var min = parseFloat(input.getAttribute('min')) || 0;
-	      var max = parseFloat(input.getAttribute('max')) || 100;
-	      var step = parseFloat(input.getAttribute('step')) || 1;
-	      var delta = max - min; // Calculate percentage
-
-	      var percent;
-	      var clientRect = input.getBoundingClientRect();
-	      var thumbWidth = 100 / clientRect.width * (this.config.thumbWidth / 2) / 100; // Determine left percentage
-
-	      percent = 100 / clientRect.width * (touch.clientX - clientRect.left); // Don't allow outside bounds
-
-	      if (percent < 0) {
-	        percent = 0;
-	      } else if (percent > 100) {
-	        percent = 100;
-	      } // Factor in the thumb offset
-
-
-	      if (percent < 50) {
-	        percent -= (100 - percent * 2) * thumbWidth;
-	      } else if (percent > 50) {
-	        percent += (percent - 50) * 2 * thumbWidth;
-	      } // Find the closest step to the mouse position
-
-
-	      return min + round(delta * (percent / 100), step);
+	    value: function value(t) {
+	      if (!e.enabled || !is$1.event(t)) return null;
+	      var n,
+	          r = t.target,
+	          i = t.changedTouches[0],
+	          o = parseFloat(r.getAttribute("min")) || 0,
+	          s = parseFloat(r.getAttribute("max")) || 100,
+	          u = parseFloat(r.getAttribute("step")) || 1,
+	          c = r.getBoundingClientRect(),
+	          a = 100 / c.width * (this.config.thumbWidth / 2) / 100;
+	      return 0 > (n = 100 / c.width * (i.clientX - c.left)) ? n = 0 : 100 < n && (n = 100), 50 > n ? n -= (100 - 2 * n) * a : 50 < n && (n += 2 * (n - 50) * a), o + round(n / 100 * (s - o), u);
 	    }
-	    /**
-	     * Update range value based on position
-	     * @param {Event} event
-	     */
-
 	  }, {
 	    key: "set",
-	    value: function set(event) {
-	      if (!RangeTouch.enabled || !is$1.event(event) || event.target.disabled) {
-	        return;
-	      } // Prevent text highlight on iOS
-
-
-	      event.preventDefault(); // Set value
-
-	      event.target.value = this.get(event); // Trigger event
-
-	      trigger(event.target, event.type === 'touchend' ? 'change' : 'input');
+	    value: function value(t) {
+	      e.enabled && is$1.event(t) && !t.target.disabled && (t.preventDefault(), t.target.value = this.get(t), trigger(t.target, "touchend" === t.type ? "change" : "input"));
 	    }
 	  }], [{
 	    key: "setup",
+	    value: function value(t) {
+	      var n = 1 < arguments.length && void 0 !== arguments[1] ? arguments[1] : {},
+	          r = null;
+	      if (is$1.empty(t) || is$1.string(t) ? r = Array.from(document.querySelectorAll(is$1.string(t) ? t : 'input[type="range"]')) : is$1.element(t) ? r = [t] : is$1.nodeList(t) ? r = Array.from(t) : is$1.array(t) && (r = t.filter(is$1.element)), is$1.empty(r)) return null;
 
-	    /**
-	     * Setup multiple instances
-	     * @param {String|Element|NodeList|Array} target
-	     * @param {Object} options
-	     */
-	    value: function setup(target) {
-	      var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-	      var targets = null;
+	      var i = _objectSpread2$1({}, defaults$1, {}, n);
 
-	      if (is$1.empty(target) || is$1.string(target)) {
-	        targets = Array.from(document.querySelectorAll(is$1.string(target) ? target : 'input[type="range"]'));
-	      } else if (is$1.element(target)) {
-	        targets = [target];
-	      } else if (is$1.nodeList(target)) {
-	        targets = Array.from(target);
-	      } else if (is$1.array(target)) {
-	        targets = target.filter(is$1.element);
-	      }
-
-	      if (is$1.empty(targets)) {
-	        return null;
-	      }
-
-	      var config = Object.assign({}, defaults$1, options);
-
-	      if (is$1.string(target) && config.watch) {
-	        // Create an observer instance
-	        var observer = new MutationObserver(function (mutations) {
-	          Array.from(mutations).forEach(function (mutation) {
-	            Array.from(mutation.addedNodes).forEach(function (node) {
-	              if (!is$1.element(node) || !matches(node, target)) {
-	                return;
-	              } // eslint-disable-next-line no-unused-vars
-
-
-	              var range = new RangeTouch(node, config);
+	      if (is$1.string(t) && i.watch) {
+	        var o = new MutationObserver(function (n) {
+	          Array.from(n).forEach(function (n) {
+	            Array.from(n.addedNodes).forEach(function (n) {
+	              is$1.element(n) && matches(n, t) && new e(n, i);
 	            });
 	          });
-	        }); // Pass in the target node, as well as the observer options
-
-	        observer.observe(document.body, {
-	          childList: true,
-	          subtree: true
+	        });
+	        o.observe(document.body, {
+	          childList: !0,
+	          subtree: !0
 	        });
 	      }
 
-	      return targets.map(function (t) {
-	        return new RangeTouch(t, options);
+	      return r.map(function (t) {
+	        return new e(t, n);
 	      });
 	    }
 	  }, {
 	    key: "enabled",
 	    get: function get() {
-	      return 'ontouchstart' in document.documentElement;
+	      return "ontouchstart" in document.documentElement;
 	    }
-	  }]);
-
-	  return RangeTouch;
+	  }]), e;
 	}();
 
 	var transitionEndEvent = function () {
@@ -7963,7 +7915,7 @@ typeof navigator === "object" && (function () {
 
 	  var event = new CustomEvent(type, {
 	    bubbles: bubbles,
-	    detail: _objectSpread2({}, detail, {
+	    detail: _objectSpread2(_objectSpread2({}, detail), {}, {
 	      plyr: this
 	    })
 	  }); // Dispatch the event
@@ -8239,9 +8191,7 @@ typeof navigator === "object" && (function () {
 	  });
 	}
 
-	var Storage =
-	/*#__PURE__*/
-	function () {
+	var Storage = /*#__PURE__*/function () {
 	  function Storage(player) {
 	    _classCallCheck(this, Storage);
 
@@ -8556,7 +8506,7 @@ typeof navigator === "object" && (function () {
 	    var attr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 	    var text = i18n.get(key, this.config);
 
-	    var attributes = _objectSpread2({}, attr, {
+	    var attributes = _objectSpread2(_objectSpread2({}, attr), {}, {
 	      class: [attr.class, this.config.classNames.hidden].filter(Boolean).join(' ')
 	    });
 
@@ -9958,9 +9908,7 @@ typeof navigator === "object" && (function () {
 	  }
 	};
 
-	var Fullscreen =
-	/*#__PURE__*/
-	function () {
+	var Fullscreen = /*#__PURE__*/function () {
 	  function Fullscreen(player) {
 	    var _this = this;
 
@@ -10493,9 +10441,7 @@ typeof navigator === "object" && (function () {
 	  }
 	};
 
-	var Listeners =
-	/*#__PURE__*/
-	function () {
+	var Listeners = /*#__PURE__*/function () {
 	  function Listeners(player) {
 	    _classCallCheck(this, Listeners);
 
@@ -11569,9 +11515,7 @@ typeof navigator === "object" && (function () {
 	}; // Plyr instance
 
 
-	var Plyr =
-	/*#__PURE__*/
-	function () {
+	var Plyr = /*#__PURE__*/function () {
 	  function Plyr(target, options) {
 	    var _this = this;
 
