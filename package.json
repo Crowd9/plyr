@@ -67,5 +67,8 @@
     "loadjs": "^4.2.0",
     "rangetouch": "^2.0.1",
     "url-polyfill": "^1.1.8"
+  },
+  "resolutions": {
+    "tar-stream": "2.1.3"
   }
 }
