@@ -1,7 +1,6 @@
 {
     "parser": "babel-eslint",
     "extends": ["airbnb-base", "prettier"],
-    "plugins": ["simple-import-sort", "import"],
     "env": {
         "browser": true,
         "es6": true
@@ -21,8 +20,7 @@
             }
         ],
         "sort-imports": "off",
-        "import/order": "off",
-        "simple-import-sort/sort": "error"
+        "import/order": "off"
     },
     "parserOptions": {
         "sourceType": "module"
