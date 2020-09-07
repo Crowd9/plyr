@@ -193,11 +193,8 @@ const ui = {
           }
         })
         .then(() => {
-          Object.assign(this.elements.poster.style, {
-            backgroundImage: `url('${poster}')`,
-            // Reset backgroundSize as well (since it can be set to "cover" for padded thumbnails for youtube)
-            backgroundSize: '',
-          });
+          this.elements.poster.style.setProperty('background-image', `url('${poster}')`, 'important')
+          this.elements.poster.style.backgroundSize = ''
 
           ui.togglePoster.call(this, true);
 
@@ -273,7 +270,7 @@ const ui = {
       .filter(key => !is.empty(key) && key.startsWith('--plyr'))
       .forEach(key => {
         // Set on the container
-        this.elements.container.style.setProperty(key, this.media.style.getPropertyValue(key));
+        this.elements.container.style.setProperty(key, this.media.style.getPropertyValue(key), 'important');
 
         // Clean up from media element
         this.media.style.removeProperty(key);

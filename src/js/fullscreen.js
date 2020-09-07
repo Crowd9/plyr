@@ -161,7 +161,7 @@ class Fullscreen {
     }
 
     // Toggle scroll
-    document.body.style.overflow = toggle ? 'hidden' : '';
+    document.body.style.setProperty('overflow', toggle ? 'hidden' : '', 'important');
 
     // Toggle class hook
     toggleClass(this.target, this.player.config.classNames.fullscreen.fallback, toggle);
