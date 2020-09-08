@@ -3638,7 +3638,7 @@ typeof navigator === "object" && (function (global, factory) {
         _this.toggle();
       }); // Tap focus when in fullscreen
 
-      on.call(this, this.player.elements.container, 'keydown', function (event) {
+      on.call(this.player, this.player.elements.container, 'keydown', function (event) {
         return _this.trapFocus(event);
       }); // Update the UI
 
