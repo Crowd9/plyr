@@ -36,9 +36,7 @@
   "devDependencies": {
     "@babel/core": "^7.12.3",
     "@babel/preset-env": "^7.12.1",
-    "@sampotts/eslint-config": "1.1.5",
     "autoprefixer": "^9.8.6",
-    "babel-eslint": "^10.1.0",
     "del": "^6.0.0",
     "eslint": "^7.3.1",
     "gulp": "^4.0.2",
