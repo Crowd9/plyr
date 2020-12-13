@@ -14068,7 +14068,7 @@ typeof navigator === "object" && (function () {
 	      _this.player.listeners.proxy(event, _this.toggle, 'fullscreen');
 	    }); // Tap focus when in fullscreen
 
-	    on.call(this, this.player.elements.container, 'keydown', function (event) {
+	    on.call(this.player, this.player.elements.container, 'keydown', function (event) {
 	      return _this.trapFocus(event);
 	    }); // Update the UI
 
@@ -15009,7 +15009,7 @@ typeof navigator === "object" && (function () {
 	          } // Touch devices will just show controls (if hidden)
 
 
-	          if (player.touch && player.config.hideControls && !player.stopped) {
+	          if (player.touch && player.config.hideControls && !player.paused) {
 	            return;
 	          }
 
