@@ -164,8 +164,258 @@ typeof navigator === "object" && (function (global, factory) {
   }
 
   // ==========================================================================
-  // Plyr Captions
-  // TODO: Create as class
+  // Type checking utils
+  // ==========================================================================
+  var getConstructor = function getConstructor(input) {
+    return input !== null && typeof input !== 'undefined' ? input.constructor : null;
+  };
+
+  var instanceOf = function instanceOf(input, constructor) {
+    return Boolean(input && constructor && input instanceof constructor);
+  };
+
+  var isNullOrUndefined = function isNullOrUndefined(input) {
+    return input === null || typeof input === 'undefined';
+  };
+
+  var isObject = function isObject(input) {
+    return getConstructor(input) === Object;
+  };
+
+  var isNumber = function isNumber(input) {
+    return getConstructor(input) === Number && !Number.isNaN(input);
+  };
+
+  var isString = function isString(input) {
+    return getConstructor(input) === String;
+  };
+
+  var isBoolean = function isBoolean(input) {
+    return getConstructor(input) === Boolean;
+  };
+
+  var isFunction = function isFunction(input) {
+    return getConstructor(input) === Function;
+  };
+
+  var isArray = function isArray(input) {
+    return Array.isArray(input);
+  };
+
+  var isWeakMap = function isWeakMap(input) {
+    return instanceOf(input, WeakMap);
+  };
+
+  var isNodeList = function isNodeList(input) {
+    return instanceOf(input, NodeList);
+  };
+
+  var isElement = function isElement(input) {
+    return instanceOf(input, Element);
+  };
+
+  var isTextNode = function isTextNode(input) {
+    return getConstructor(input) === Text;
+  };
+
+  var isEvent = function isEvent(input) {
+    return instanceOf(input, Event);
+  };
+
+  var isKeyboardEvent = function isKeyboardEvent(input) {
+    return instanceOf(input, KeyboardEvent);
+  };
+
+  var isCue = function isCue(input) {
+    return instanceOf(input, window.TextTrackCue) || instanceOf(input, window.VTTCue);
+  };
+
+  var isTrack = function isTrack(input) {
+    return instanceOf(input, TextTrack) || !isNullOrUndefined(input) && isString(input.kind);
+  };
+
+  var isPromise = function isPromise(input) {
+    return instanceOf(input, Promise) && isFunction(input.then);
+  };
+
+  var isEmpty = function isEmpty(input) {
+    return isNullOrUndefined(input) || (isString(input) || isArray(input) || isNodeList(input)) && !input.length || isObject(input) && !Object.keys(input).length;
+  };
+
+  var isUrl = function isUrl(input) {
+    // Accept a URL object
+    if (instanceOf(input, window.URL)) {
+      return true;
+    } // Must be string from here
+
+
+    if (!isString(input)) {
+      return false;
+    } // Add the protocol if required
+
+
+    var string = input;
+
+    if (!input.startsWith('http://') || !input.startsWith('https://')) {
+      string = "http://".concat(input);
+    }
+
+    try {
+      return !isEmpty(new URL(string).hostname);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  var is = {
+    nullOrUndefined: isNullOrUndefined,
+    object: isObject,
+    number: isNumber,
+    string: isString,
+    boolean: isBoolean,
+    function: isFunction,
+    array: isArray,
+    weakMap: isWeakMap,
+    nodeList: isNodeList,
+    element: isElement,
+    textNode: isTextNode,
+    event: isEvent,
+    keyboardEvent: isKeyboardEvent,
+    cue: isCue,
+    track: isTrack,
+    promise: isPromise,
+    url: isUrl,
+    empty: isEmpty
+  };
+
+  function cloneDeep(object) {
+    return JSON.parse(JSON.stringify(object));
+  } // Get a nested value in an object
+
+  function getDeep(object, path) {
+    return path.split('.').reduce(function (obj, key) {
+      return obj && obj[key];
+    }, object);
+  } // Deep extend destination object with N more objects
+
+  function extend() {
+    var target = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+    for (var _len = arguments.length, sources = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+      sources[_key - 1] = arguments[_key];
+    }
+
+    if (!sources.length) {
+      return target;
+    }
+
+    var source = sources.shift();
+
+    if (!is.object(source)) {
+      return target;
+    }
+
+    Object.keys(source).forEach(function (key) {
+      if (is.object(source[key])) {
+        if (!Object.keys(target).includes(key)) {
+          Object.assign(target, _defineProperty({}, key, {}));
+        }
+
+        extend(target[key], source[key]);
+      } else {
+        Object.assign(target, _defineProperty({}, key, source[key]));
+      }
+    });
+    return extend.apply(void 0, [target].concat(sources));
+  }
+
+  // ==========================================================================
+
+  function getPercentage(current, max) {
+    if (current === 0 || max === 0 || Number.isNaN(current) || Number.isNaN(max)) {
+      return 0;
+    }
+
+    return (current / max * 100).toFixed(2);
+  } // Replace all occurances of a string in a string
+
+  var replaceAll = function replaceAll() {
+    var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+    var find = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    var replace = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+    return input.replace(new RegExp(find.toString().replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1'), 'g'), replace.toString());
+  }; // Convert to title case
+
+  var toTitleCase = function toTitleCase() {
+    var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+    return input.toString().replace(/\w\S*/g, function (text) {
+      return text.charAt(0).toUpperCase() + text.substr(1).toLowerCase();
+    });
+  }; // Convert string to pascalCase
+
+  function toPascalCase() {
+    var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+    var string = input.toString(); // Convert kebab case
+
+    string = replaceAll(string, '-', ' '); // Convert snake case
+
+    string = replaceAll(string, '_', ' '); // Convert to title case
+
+    string = toTitleCase(string); // Convert to pascal case
+
+    return replaceAll(string, ' ', '');
+  } // Convert string to pascalCase
+
+  function toCamelCase() {
+    var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+    var string = input.toString(); // Convert to pascal case
+
+    string = toPascalCase(string); // Convert first character to lowercase
+
+    return string.charAt(0).toLowerCase() + string.slice(1);
+  } // Remove HTML from a string
+
+  var resources = {
+    pip: 'PIP',
+    airplay: 'AirPlay',
+    html5: 'HTML5',
+    vimeo: 'Vimeo',
+    youtube: 'YouTube'
+  };
+  var i18n = {
+    get: function get() {
+      var key = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+      var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      if (is.empty(key) || is.empty(config)) {
+        return '';
+      }
+
+      var string = getDeep(config.i18n, key);
+
+      if (is.empty(string)) {
+        if (Object.keys(resources).includes(key)) {
+          return resources[key];
+        }
+
+        return '';
+      }
+
+      var replace = {
+        '{seektime}': config.seekTime,
+        '{title}': config.title
+      };
+      Object.entries(replace).forEach(function (_ref) {
+        var _ref2 = _slicedToArray(_ref, 2),
+            k = _ref2[0],
+            v = _ref2[1];
+
+        string = replaceAll(string, k, v);
+      });
+      return string;
+    }
+  };
+
   // ==========================================================================
   var captions = {
     setup: function setup() {
@@ -711,57 +961,57 @@ typeof navigator === "object" && (function (global, factory) {
     }
   }
 
-  var getConstructor = function getConstructor(e) {
+  var getConstructor$1 = function getConstructor(e) {
     return null != e ? e.constructor : null;
   },
-      instanceOf = function instanceOf(e, t) {
+      instanceOf$1 = function instanceOf(e, t) {
     return !!(e && t && e instanceof t);
   },
-      isNullOrUndefined = function isNullOrUndefined(e) {
+      isNullOrUndefined$1 = function isNullOrUndefined(e) {
     return null == e;
   },
-      isObject = function isObject(e) {
-    return getConstructor(e) === Object;
+      isObject$1 = function isObject(e) {
+    return getConstructor$1(e) === Object;
   },
-      isNumber = function isNumber(e) {
-    return getConstructor(e) === Number && !Number.isNaN(e);
+      isNumber$1 = function isNumber(e) {
+    return getConstructor$1(e) === Number && !Number.isNaN(e);
   },
-      isString = function isString(e) {
-    return getConstructor(e) === String;
+      isString$1 = function isString(e) {
+    return getConstructor$1(e) === String;
   },
-      isBoolean = function isBoolean(e) {
-    return getConstructor(e) === Boolean;
+      isBoolean$1 = function isBoolean(e) {
+    return getConstructor$1(e) === Boolean;
   },
-      isFunction = function isFunction(e) {
-    return getConstructor(e) === Function;
+      isFunction$1 = function isFunction(e) {
+    return getConstructor$1(e) === Function;
   },
-      isArray = function isArray(e) {
+      isArray$1 = function isArray(e) {
     return Array.isArray(e);
   },
-      isNodeList = function isNodeList(e) {
-    return instanceOf(e, NodeList);
+      isNodeList$1 = function isNodeList(e) {
+    return instanceOf$1(e, NodeList);
   },
-      isElement = function isElement(e) {
-    return instanceOf(e, Element);
+      isElement$1 = function isElement(e) {
+    return instanceOf$1(e, Element);
   },
-      isEvent = function isEvent(e) {
-    return instanceOf(e, Event);
+      isEvent$1 = function isEvent(e) {
+    return instanceOf$1(e, Event);
   },
-      isEmpty = function isEmpty(e) {
-    return isNullOrUndefined(e) || (isString(e) || isArray(e) || isNodeList(e)) && !e.length || isObject(e) && !Object.keys(e).length;
+      isEmpty$1 = function isEmpty(e) {
+    return isNullOrUndefined$1(e) || (isString$1(e) || isArray$1(e) || isNodeList$1(e)) && !e.length || isObject$1(e) && !Object.keys(e).length;
   },
-      is = {
-    nullOrUndefined: isNullOrUndefined,
-    object: isObject,
-    number: isNumber,
-    string: isString,
-    boolean: isBoolean,
-    function: isFunction,
-    array: isArray,
-    nodeList: isNodeList,
-    element: isElement,
-    event: isEvent,
-    empty: isEmpty
+      is$1 = {
+    nullOrUndefined: isNullOrUndefined$1,
+    object: isObject$1,
+    number: isNumber$1,
+    string: isString$1,
+    boolean: isBoolean$1,
+    function: isFunction$1,
+    array: isArray$1,
+    nodeList: isNodeList$1,
+    element: isElement$1,
+    event: isEvent$1,
+    empty: isEmpty$1
   };
 
   function getDecimalPlaces(e) {
@@ -780,7 +1030,7 @@ typeof navigator === "object" && (function (global, factory) {
 
   var RangeTouch = function () {
     function e(t, n) {
-      _classCallCheck$1(this, e), is.element(t) ? this.element = t : is.string(t) && (this.element = document.querySelector(t)), is.element(this.element) && is.empty(this.element.rangeTouch) && (this.config = _objectSpread2$1({}, defaults$1, {}, n), this.init());
+      _classCallCheck$1(this, e), is$1.element(t) ? this.element = t : is$1.string(t) && (this.element = document.querySelector(t)), is$1.element(this.element) && is$1.empty(this.element.rangeTouch) && (this.config = _objectSpread2$1({}, defaults$1, {}, n), this.init());
     }
 
     return _createClass$1(e, [{
@@ -807,7 +1057,7 @@ typeof navigator === "object" && (function (global, factory) {
     }, {
       key: "get",
       value: function value(t) {
-        if (!e.enabled || !is.event(t)) return null;
+        if (!e.enabled || !is$1.event(t)) return null;
         var n,
             r = t.target,
             i = t.changedTouches[0],
@@ -821,22 +1071,22 @@ typeof navigator === "object" && (function (global, factory) {
     }, {
       key: "set",
       value: function value(t) {
-        e.enabled && is.event(t) && !t.target.disabled && (t.preventDefault(), t.target.value = this.get(t), trigger(t.target, "touchend" === t.type ? "change" : "input"));
+        e.enabled && is$1.event(t) && !t.target.disabled && (t.preventDefault(), t.target.value = this.get(t), trigger(t.target, "touchend" === t.type ? "change" : "input"));
       }
     }], [{
       key: "setup",
       value: function value(t) {
         var n = 1 < arguments.length && void 0 !== arguments[1] ? arguments[1] : {},
             r = null;
-        if (is.empty(t) || is.string(t) ? r = Array.from(document.querySelectorAll(is.string(t) ? t : 'input[type="range"]')) : is.element(t) ? r = [t] : is.nodeList(t) ? r = Array.from(t) : is.array(t) && (r = t.filter(is.element)), is.empty(r)) return null;
+        if (is$1.empty(t) || is$1.string(t) ? r = Array.from(document.querySelectorAll(is$1.string(t) ? t : 'input[type="range"]')) : is$1.element(t) ? r = [t] : is$1.nodeList(t) ? r = Array.from(t) : is$1.array(t) && (r = t.filter(is$1.element)), is$1.empty(r)) return null;
 
         var i = _objectSpread2$1({}, defaults$1, {}, n);
 
-        if (is.string(t) && i.watch) {
+        if (is$1.string(t) && i.watch) {
           var o = new MutationObserver(function (n) {
             Array.from(n).forEach(function (n) {
               Array.from(n.addedNodes).forEach(function (n) {
-                is.element(n) && matches(n, t) && new e(n, i);
+                is$1.element(n) && matches(n, t) && new e(n, i);
               });
             });
           });
@@ -859,131 +1109,6 @@ typeof navigator === "object" && (function (global, factory) {
   }();
 
   // ==========================================================================
-  // Type checking utils
-  // ==========================================================================
-  var getConstructor$1 = function getConstructor(input) {
-    return input !== null && typeof input !== 'undefined' ? input.constructor : null;
-  };
-
-  var instanceOf$1 = function instanceOf(input, constructor) {
-    return Boolean(input && constructor && input instanceof constructor);
-  };
-
-  var isNullOrUndefined$1 = function isNullOrUndefined(input) {
-    return input === null || typeof input === 'undefined';
-  };
-
-  var isObject$1 = function isObject(input) {
-    return getConstructor$1(input) === Object;
-  };
-
-  var isNumber$1 = function isNumber(input) {
-    return getConstructor$1(input) === Number && !Number.isNaN(input);
-  };
-
-  var isString$1 = function isString(input) {
-    return getConstructor$1(input) === String;
-  };
-
-  var isBoolean$1 = function isBoolean(input) {
-    return getConstructor$1(input) === Boolean;
-  };
-
-  var isFunction$1 = function isFunction(input) {
-    return getConstructor$1(input) === Function;
-  };
-
-  var isArray$1 = function isArray(input) {
-    return Array.isArray(input);
-  };
-
-  var isWeakMap = function isWeakMap(input) {
-    return instanceOf$1(input, WeakMap);
-  };
-
-  var isNodeList$1 = function isNodeList(input) {
-    return instanceOf$1(input, NodeList);
-  };
-
-  var isElement$1 = function isElement(input) {
-    return instanceOf$1(input, Element);
-  };
-
-  var isTextNode = function isTextNode(input) {
-    return getConstructor$1(input) === Text;
-  };
-
-  var isEvent$1 = function isEvent(input) {
-    return instanceOf$1(input, Event);
-  };
-
-  var isKeyboardEvent = function isKeyboardEvent(input) {
-    return instanceOf$1(input, KeyboardEvent);
-  };
-
-  var isCue = function isCue(input) {
-    return instanceOf$1(input, window.TextTrackCue) || instanceOf$1(input, window.VTTCue);
-  };
-
-  var isTrack = function isTrack(input) {
-    return instanceOf$1(input, TextTrack) || !isNullOrUndefined$1(input) && isString$1(input.kind);
-  };
-
-  var isPromise = function isPromise(input) {
-    return instanceOf$1(input, Promise) && isFunction$1(input.then);
-  };
-
-  var isEmpty$1 = function isEmpty(input) {
-    return isNullOrUndefined$1(input) || (isString$1(input) || isArray$1(input) || isNodeList$1(input)) && !input.length || isObject$1(input) && !Object.keys(input).length;
-  };
-
-  var isUrl = function isUrl(input) {
-    // Accept a URL object
-    if (instanceOf$1(input, window.URL)) {
-      return true;
-    } // Must be string from here
-
-
-    if (!isString$1(input)) {
-      return false;
-    } // Add the protocol if required
-
-
-    var string = input;
-
-    if (!input.startsWith('http://') || !input.startsWith('https://')) {
-      string = "http://".concat(input);
-    }
-
-    try {
-      return !isEmpty$1(new URL(string).hostname);
-    } catch (e) {
-      return false;
-    }
-  };
-
-  var is$1 = {
-    nullOrUndefined: isNullOrUndefined$1,
-    object: isObject$1,
-    number: isNumber$1,
-    string: isString$1,
-    boolean: isBoolean$1,
-    function: isFunction$1,
-    array: isArray$1,
-    weakMap: isWeakMap,
-    nodeList: isNodeList$1,
-    element: isElement$1,
-    textNode: isTextNode,
-    event: isEvent$1,
-    keyboardEvent: isKeyboardEvent,
-    cue: isCue,
-    track: isTrack,
-    promise: isPromise,
-    url: isUrl,
-    empty: isEmpty$1
-  };
-
-  // ==========================================================================
   var transitionEndEvent = function () {
     var element = document.createElement('span');
     var events = {
@@ -995,7 +1120,7 @@ typeof navigator === "object" && (function (global, factory) {
     var type = Object.keys(events).find(function (event) {
       return element.style[event] !== undefined;
     });
-    return is$1.string(type) ? events[type] : false;
+    return is.string(type) ? events[type] : false;
   }(); // Force repaint of element
 
   function repaint(element, delay) {
@@ -1026,47 +1151,6 @@ typeof navigator === "object" && (function (global, factory) {
     isIos: /(iPad|iPhone|iPod)/gi.test(navigator.platform)
   };
 
-  function cloneDeep(object) {
-    return JSON.parse(JSON.stringify(object));
-  } // Get a nested value in an object
-
-  function getDeep(object, path) {
-    return path.split('.').reduce(function (obj, key) {
-      return obj && obj[key];
-    }, object);
-  } // Deep extend destination object with N more objects
-
-  function extend() {
-    var target = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-    for (var _len = arguments.length, sources = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-      sources[_key - 1] = arguments[_key];
-    }
-
-    if (!sources.length) {
-      return target;
-    }
-
-    var source = sources.shift();
-
-    if (!is$1.object(source)) {
-      return target;
-    }
-
-    Object.keys(source).forEach(function (key) {
-      if (is$1.object(source[key])) {
-        if (!Object.keys(target).includes(key)) {
-          Object.assign(target, _defineProperty({}, key, {}));
-        }
-
-        extend(target[key], source[key]);
-      } else {
-        Object.assign(target, _defineProperty({}, key, source[key]));
-      }
-    });
-    return extend.apply(void 0, [target].concat(sources));
-  }
-
   function wrap(elements, wrapper) {
     // Convert `elements` to an array, if necessary.
     var targets = elements.length ? elements : [elements]; // Loops backwards to prevent having to clone the wrapper on the
@@ -1092,7 +1176,7 @@ typeof navigator === "object" && (function (global, factory) {
   } // Set attributes
 
   function setAttributes(element, attributes) {
-    if (!is$1.element(element) || is$1.empty(attributes)) {
+    if (!is.element(element) || is.empty(attributes)) {
       return;
     } // Assume null and undefined attributes should be left out,
     // Setting them would otherwise convert them to "null" and "undefined"
@@ -1102,7 +1186,7 @@ typeof navigator === "object" && (function (global, factory) {
       var _ref2 = _slicedToArray(_ref, 2),
           value = _ref2[1];
 
-      return !is$1.nullOrUndefined(value);
+      return !is.nullOrUndefined(value);
     }).forEach(function (_ref3) {
       var _ref4 = _slicedToArray(_ref3, 2),
           key = _ref4[0],
@@ -1116,12 +1200,12 @@ typeof navigator === "object" && (function (global, factory) {
     // Create a new <element>
     var element = document.createElement(type); // Set all passed attributes
 
-    if (is$1.object(attributes)) {
+    if (is.object(attributes)) {
       setAttributes(element, attributes);
     } // Add text node
 
 
-    if (is$1.string(text)) {
+    if (is.string(text)) {
       element.innerText = text;
     } // Return built element
 
@@ -1130,7 +1214,7 @@ typeof navigator === "object" && (function (global, factory) {
   } // Inaert an element after another
 
   function insertElement(type, parent, attributes, text) {
-    if (!is$1.element(parent)) {
+    if (!is.element(parent)) {
       return;
     }
 
@@ -1138,12 +1222,12 @@ typeof navigator === "object" && (function (global, factory) {
   } // Remove element(s)
 
   function removeElement(element) {
-    if (is$1.nodeList(element) || is$1.array(element)) {
+    if (is.nodeList(element) || is.array(element)) {
       Array.from(element).forEach(removeElement);
       return;
     }
 
-    if (!is$1.element(element) || !is$1.element(element.parentNode)) {
+    if (!is.element(element) || !is.element(element.parentNode)) {
       return;
     }
 
@@ -1151,7 +1235,7 @@ typeof navigator === "object" && (function (global, factory) {
   } // Remove all child elements
 
   function emptyElement(element) {
-    if (!is$1.element(element)) {
+    if (!is.element(element)) {
       return;
     }
 
@@ -1164,7 +1248,7 @@ typeof navigator === "object" && (function (global, factory) {
   } // Replace element
 
   function replaceElement(newChild, oldChild) {
-    if (!is$1.element(oldChild) || !is$1.element(oldChild.parentNode) || !is$1.element(newChild)) {
+    if (!is.element(oldChild) || !is.element(oldChild.parentNode) || !is.element(newChild)) {
       return null;
     }
 
@@ -1177,7 +1261,7 @@ typeof navigator === "object" && (function (global, factory) {
     // '.test' to { class: 'test' }
     // '#test' to { id: 'test' }
     // '[data-test="test"]' to { 'data-test': 'test' }
-    if (!is$1.string(sel) || is$1.empty(sel)) {
+    if (!is.string(sel) || is.empty(sel)) {
       return {};
     }
 
@@ -1201,7 +1285,7 @@ typeof navigator === "object" && (function (global, factory) {
       switch (start) {
         case '.':
           // Add to existing classname
-          if (is$1.string(existing.class)) {
+          if (is.string(existing.class)) {
             attributes.class = "".concat(existing.class, " ").concat(className);
           } else {
             attributes.class = className;
@@ -1224,13 +1308,13 @@ typeof navigator === "object" && (function (global, factory) {
   } // Toggle hidden
 
   function toggleHidden(element, hidden) {
-    if (!is$1.element(element)) {
+    if (!is.element(element)) {
       return;
     }
 
     var hide = hidden;
 
-    if (!is$1.boolean(hide)) {
+    if (!is.boolean(hide)) {
       hide = !element.hidden;
     } // eslint-disable-next-line no-param-reassign
 
@@ -1239,13 +1323,13 @@ typeof navigator === "object" && (function (global, factory) {
   } // Mirror Element.classList.toggle, with IE compatibility for "force" argument
 
   function toggleClass(element, className, force) {
-    if (is$1.nodeList(element)) {
+    if (is.nodeList(element)) {
       return Array.from(element).map(function (e) {
         return toggleClass(e, className, force);
       });
     }
 
-    if (is$1.element(element)) {
+    if (is.element(element)) {
       var method = 'toggle';
 
       if (typeof force !== 'undefined') {
@@ -1260,7 +1344,7 @@ typeof navigator === "object" && (function (global, factory) {
   } // Has class name
 
   function hasClass(element, className) {
-    return is$1.element(element) && element.classList.contains(className);
+    return is.element(element) && element.classList.contains(className);
   } // Element matches selector
 
   function matches$1(element, selector) {
@@ -1306,7 +1390,7 @@ typeof navigator === "object" && (function (global, factory) {
     var element = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
     var tabFocus = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-    if (!is$1.element(element)) {
+    if (!is.element(element)) {
       return;
     } // Set regular focus
 
@@ -1352,7 +1436,7 @@ typeof navigator === "object" && (function (global, factory) {
       // https://developer.apple.com/documentation/webkitjs/adding_picture_in_picture_to_your_safari_media_controls
 
 
-      if (is$1.function(createElement('video').webkitSetPresentationMode)) {
+      if (is.function(createElement('video').webkitSetPresentationMode)) {
         return true;
       } // Chrome
       // https://developers.google.com/web/updates/2018/10/watch-video-using-picture-in-picture
@@ -1366,7 +1450,7 @@ typeof navigator === "object" && (function (global, factory) {
     }(),
     // Airplay support
     // Safari only currently
-    airplay: is$1.function(window.WebKitPlaybackTargetAvailabilityEvent),
+    airplay: is.function(window.WebKitPlaybackTargetAvailabilityEvent),
     // Inline playback support
     // https://webkit.org/blog/6784/new-video-policies-for-ios/
     playsinline: 'playsInline' in document.createElement('video'),
@@ -1374,7 +1458,7 @@ typeof navigator === "object" && (function (global, factory) {
     // Credits: http://diveintohtml5.info/everything.html
     // Related: http://www.leanbackplayer.com/test/h5mt.html
     mime: function mime(input) {
-      if (is$1.empty(input)) {
+      if (is.empty(input)) {
         return false;
       }
 
@@ -1448,7 +1532,7 @@ typeof navigator === "object" && (function (global, factory) {
     var capture = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : false;
 
     // Bail if no element, event, or callback
-    if (!element || !('addEventListener' in element) || is$1.empty(event) || !is$1.function(callback)) {
+    if (!element || !('addEventListener' in element) || is.empty(event) || !is.function(callback)) {
       return;
     } // Allow multiple events
 
@@ -1526,7 +1610,7 @@ typeof navigator === "object" && (function (global, factory) {
     var detail = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 
     // Bail if no element
-    if (!is$1.element(element) || is$1.empty(type)) {
+    if (!is.element(element) || is.empty(type)) {
       return;
     } // Create and dispatch the event
 
@@ -1570,21 +1654,21 @@ typeof navigator === "object" && (function (global, factory) {
    */
 
   function silencePromise(value) {
-    if (is$1.promise(value)) {
+    if (is.promise(value)) {
       value.then(null, function () {});
     }
   }
 
   function validateRatio(input) {
-    if (!is$1.array(input) && (!is$1.string(input) || !input.includes(':'))) {
+    if (!is.array(input) && (!is.string(input) || !input.includes(':'))) {
       return false;
     }
 
-    var ratio = is$1.array(input) ? input : input.split(':');
-    return ratio.map(Number).every(is$1.number);
+    var ratio = is.array(input) ? input : input.split(':');
+    return ratio.map(Number).every(is.number);
   }
   function reduceAspectRatio(ratio) {
-    if (!is$1.array(ratio) || !ratio.every(is$1.number)) {
+    if (!is.array(ratio) || !ratio.every(is.number)) {
       return null;
     }
 
@@ -1612,7 +1696,7 @@ typeof navigator === "object" && (function (global, factory) {
     } // Get from embed
 
 
-    if (ratio === null && !is$1.empty(this.embed) && is$1.array(this.embed.ratio)) {
+    if (ratio === null && !is.empty(this.embed) && is.array(this.embed.ratio)) {
       ratio = this.embed.ratio;
     } // Get from HTML5 video
 
@@ -1635,7 +1719,7 @@ typeof navigator === "object" && (function (global, factory) {
     var wrapper = this.elements.wrapper;
     var ratio = getAspectRatio.call(this, input);
 
-    var _ref = is$1.array(ratio) ? ratio : [0, 0],
+    var _ref = is.array(ratio) ? ratio : [0, 0],
         _ref2 = _slicedToArray(_ref, 2),
         w = _ref2[0],
         h = _ref2[1];
@@ -1676,7 +1760,7 @@ typeof navigator === "object" && (function (global, factory) {
       return sources.filter(function (source) {
         var type = source.getAttribute('type');
 
-        if (is$1.empty(type)) {
+        if (is.empty(type)) {
           return true;
         }
 
@@ -1704,7 +1788,7 @@ typeof navigator === "object" && (function (global, factory) {
 
       player.options.speed = player.config.speed.options; // Set aspect ratio if fixed
 
-      if (!is$1.empty(this.config.ratio)) {
+      if (!is.empty(this.config.ratio)) {
         setAspectRatio.call(player);
       } // Quality
 
@@ -1725,7 +1809,7 @@ typeof navigator === "object" && (function (global, factory) {
           } // If we're using an an external handler...
 
 
-          if (player.config.quality.forced && is$1.function(player.config.quality.onChange)) {
+          if (player.config.quality.forced && is.function(player.config.quality.onChange)) {
             player.config.quality.onChange(input);
           } else {
             // Get sources
@@ -1796,7 +1880,7 @@ typeof navigator === "object" && (function (global, factory) {
   // ==========================================================================
 
   function dedupe(array) {
-    if (!is$1.array(array)) {
+    if (!is.array(array)) {
       return array;
     }
 
@@ -1806,7 +1890,7 @@ typeof navigator === "object" && (function (global, factory) {
   } // Get the closest value in an array
 
   function closest$1(array, value) {
-    if (!is$1.array(array) || !array.length) {
+    if (!is.array(array) || !array.length) {
       return null;
     }
 
@@ -1814,93 +1898,6 @@ typeof navigator === "object" && (function (global, factory) {
       return Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev;
     });
   }
-
-  // ==========================================================================
-
-  function getPercentage(current, max) {
-    if (current === 0 || max === 0 || Number.isNaN(current) || Number.isNaN(max)) {
-      return 0;
-    }
-
-    return (current / max * 100).toFixed(2);
-  } // Replace all occurances of a string in a string
-
-  var replaceAll = function replaceAll() {
-    var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-    var find = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
-    var replace = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
-    return input.replace(new RegExp(find.toString().replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1'), 'g'), replace.toString());
-  }; // Convert to title case
-
-  var toTitleCase = function toTitleCase() {
-    var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-    return input.toString().replace(/\w\S*/g, function (text) {
-      return text.charAt(0).toUpperCase() + text.substr(1).toLowerCase();
-    });
-  }; // Convert string to pascalCase
-
-  function toPascalCase() {
-    var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-    var string = input.toString(); // Convert kebab case
-
-    string = replaceAll(string, '-', ' '); // Convert snake case
-
-    string = replaceAll(string, '_', ' '); // Convert to title case
-
-    string = toTitleCase(string); // Convert to pascal case
-
-    return replaceAll(string, ' ', '');
-  } // Convert string to pascalCase
-
-  function toCamelCase() {
-    var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-    var string = input.toString(); // Convert to pascal case
-
-    string = toPascalCase(string); // Convert first character to lowercase
-
-    return string.charAt(0).toLowerCase() + string.slice(1);
-  } // Remove HTML from a string
-
-  var resources = {
-    pip: 'PIP',
-    airplay: 'AirPlay',
-    html5: 'HTML5',
-    vimeo: 'Vimeo',
-    youtube: 'YouTube'
-  };
-  var i18n$1 = {
-    get: function get() {
-      var key = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-      var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-      if (is$1.empty(key) || is$1.empty(config)) {
-        return '';
-      }
-
-      var string = getDeep(config.i18n, key);
-
-      if (is$1.empty(string)) {
-        if (Object.keys(resources).includes(key)) {
-          return resources[key];
-        }
-
-        return '';
-      }
-
-      var replace = {
-        '{seektime}': config.seekTime,
-        '{title}': config.title
-      };
-      Object.entries(replace).forEach(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2),
-            k = _ref2[0],
-            v = _ref2[1];
-
-        string = replaceAll(string, k, v);
-      });
-      return string;
-    }
-  };
 
   var Storage = /*#__PURE__*/function () {
     function Storage(player) {
@@ -1920,12 +1917,12 @@ typeof navigator === "object" && (function (global, factory) {
 
         var store = window.localStorage.getItem(this.key);
 
-        if (is$1.empty(store)) {
+        if (is.empty(store)) {
           return null;
         }
 
         var json = JSON.parse(store);
-        return is$1.string(key) && key.length ? json[key] : json;
+        return is.string(key) && key.length ? json[key] : json;
       }
     }, {
       key: "set",
@@ -1936,14 +1933,14 @@ typeof navigator === "object" && (function (global, factory) {
         } // Can only store objectst
 
 
-        if (!is$1.object(object)) {
+        if (!is.object(object)) {
           return;
         } // Get current storage
 
 
         var storage = this.get(); // Default to empty object
 
-        if (is$1.empty(storage)) {
+        if (is.empty(storage)) {
           storage = {};
         } // Update the working copy of the values
 
@@ -2016,12 +2013,12 @@ typeof navigator === "object" && (function (global, factory) {
   // ==========================================================================
 
   function loadSprite(url, id) {
-    if (!is$1.string(url)) {
+    if (!is.string(url)) {
       return;
     }
 
     var prefix = 'cache';
-    var hasId = is$1.string(id);
+    var hasId = is.string(id);
     var isCached = false;
 
     var exists = function exists() {
@@ -2064,7 +2061,7 @@ typeof navigator === "object" && (function (global, factory) {
 
 
       fetch(url).then(function (result) {
-        if (is$1.empty(result)) {
+        if (is.empty(result)) {
           return;
         }
 
@@ -2097,7 +2094,7 @@ typeof navigator === "object" && (function (global, factory) {
     var inverted = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
     // Bail if the value isn't a number
-    if (!is$1.number(time)) {
+    if (!is.number(time)) {
       return formatTime(undefined, displayHours, inverted);
     } // Format time component to add leading zero
 
@@ -2163,7 +2160,7 @@ typeof navigator === "object" && (function (global, factory) {
           duration: getElement.call(this, this.config.selectors.display.duration)
         }; // Seek tooltip
 
-        if (is$1.element(this.elements.progress)) {
+        if (is.element(this.elements.progress)) {
           this.elements.display.seekTooltip = this.elements.progress.querySelector(".".concat(this.config.classNames.tooltip));
         }
 
@@ -2206,7 +2203,7 @@ typeof navigator === "object" && (function (global, factory) {
     // Create hidden text label
     createLabel: function createLabel(key) {
       var attr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-      var text = i18n$1.get(key, this.config);
+      var text = i18n.get(key, this.config);
 
       var attributes = _objectSpread2(_objectSpread2({}, attr), {}, {
         class: [attr.class, this.config.classNames.hidden].filter(Boolean).join(' ')
@@ -2216,7 +2213,7 @@ typeof navigator === "object" && (function (global, factory) {
     },
     // Create a badge
     createBadge: function createBadge(text) {
-      if (is$1.empty(text)) {
+      if (is.empty(text)) {
         return null;
       }
 
@@ -2308,11 +2305,11 @@ typeof navigator === "object" && (function (global, factory) {
           break;
 
         default:
-          if (is$1.empty(props.label)) {
+          if (is.empty(props.label)) {
             props.label = type;
           }
 
-          if (is$1.empty(props.icon)) {
+          if (is.empty(props.icon)) {
             props.icon = buttonType;
           }
 
@@ -2345,7 +2342,7 @@ typeof navigator === "object" && (function (global, factory) {
       setAttributes(button, attributes); // We have multiple play buttons
 
       if (type === 'play') {
-        if (!is$1.array(this.elements.buttons[type])) {
+        if (!is.array(this.elements.buttons[type])) {
           this.elements.buttons[type] = [];
         }
 
@@ -2368,7 +2365,7 @@ typeof navigator === "object" && (function (global, factory) {
         autocomplete: 'off',
         // A11y fixes for https://github.com/sampotts/plyr/issues/905
         role: 'slider',
-        'aria-label': i18n$1.get(type, this.config),
+        'aria-label': i18n.get(type, this.config),
         'aria-valuemin': 0,
         'aria-valuemax': 100,
         'aria-valuenow': 0
@@ -2396,7 +2393,7 @@ typeof navigator === "object" && (function (global, factory) {
           played: 'played',
           buffer: 'buffered'
         }[type];
-        var suffix = suffixKey ? i18n$1.get(suffixKey, this.config) : '';
+        var suffix = suffixKey ? i18n.get(suffixKey, this.config) : '';
         progress.innerText = "% ".concat(suffix.toLowerCase());
       }
 
@@ -2408,7 +2405,7 @@ typeof navigator === "object" && (function (global, factory) {
       var attributes = getAttributesFromSelector(this.config.selectors.display[type], attrs);
       var container = createElement('div', extend(attributes, {
         class: "".concat(attributes.class ? attributes.class : '', " ").concat(this.config.classNames.display.time, " ").trim(),
-        'aria-label': i18n$1.get(type, this.config)
+        'aria-label': i18n.get(type, this.config)
       }), '00:00'); // Reference for updates
 
       this.elements.display[type] = container;
@@ -2446,13 +2443,13 @@ typeof navigator === "object" && (function (global, factory) {
             if (event.which === 40 || isRadioButton && event.which === 39) {
               target = menuItem.nextElementSibling;
 
-              if (!is$1.element(target)) {
+              if (!is.element(target)) {
                 target = menuItem.parentNode.firstElementChild;
               }
             } else {
               target = menuItem.previousElementSibling;
 
-              if (!is$1.element(target)) {
+              if (!is.element(target)) {
                 target = menuItem.parentNode.lastElementChild;
               }
             }
@@ -2495,7 +2492,7 @@ typeof navigator === "object" && (function (global, factory) {
 
       flex.innerHTML = title;
 
-      if (is$1.element(badge)) {
+      if (is.element(badge)) {
         flex.appendChild(badge);
       }
 
@@ -2520,7 +2517,7 @@ typeof navigator === "object" && (function (global, factory) {
         }
       });
       this.listeners.bind(menuItem, 'click keyup', function (event) {
-        if (is$1.keyboardEvent(event) && event.which !== 32) {
+        if (is.keyboardEvent(event) && event.which !== 32) {
           return;
         }
 
@@ -2542,7 +2539,7 @@ typeof navigator === "object" && (function (global, factory) {
             break;
         }
 
-        controls.showMenuPanel.call(_this3, 'home', is$1.keyboardEvent(event));
+        controls.showMenuPanel.call(_this3, 'home', is.keyboardEvent(event));
       }, type, false);
       controls.bindMenuItemShortcuts.call(this, menuItem, type);
       list.appendChild(menuItem);
@@ -2553,7 +2550,7 @@ typeof navigator === "object" && (function (global, factory) {
       var inverted = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
       // Bail if the value isn't a number
-      if (!is$1.number(time)) {
+      if (!is.number(time)) {
         return time;
       } // Always display hours if duration is over an hour
 
@@ -2568,7 +2565,7 @@ typeof navigator === "object" && (function (global, factory) {
       var inverted = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
       // Bail if there's no element to display or the value isn't a number
-      if (!is$1.element(target) || !is$1.number(time)) {
+      if (!is.element(target) || !is.number(time)) {
         return;
       } // eslint-disable-next-line no-param-reassign
 
@@ -2582,12 +2579,12 @@ typeof navigator === "object" && (function (global, factory) {
       } // Update range
 
 
-      if (is$1.element(this.elements.inputs.volume)) {
+      if (is.element(this.elements.inputs.volume)) {
         controls.setRange.call(this, this.elements.inputs.volume, this.muted ? 0 : this.volume);
       } // Update mute state
 
 
-      if (is$1.element(this.elements.buttons.mute)) {
+      if (is.element(this.elements.buttons.mute)) {
         this.elements.buttons.mute.pressed = this.muted || this.volume === 0;
       }
     },
@@ -2595,7 +2592,7 @@ typeof navigator === "object" && (function (global, factory) {
     setRange: function setRange(target) {
       var value = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 
-      if (!is$1.element(target)) {
+      if (!is.element(target)) {
         return;
       } // eslint-disable-next-line
 
@@ -2608,22 +2605,22 @@ typeof navigator === "object" && (function (global, factory) {
     updateProgress: function updateProgress(event) {
       var _this4 = this;
 
-      if (!this.supported.ui || !is$1.event(event)) {
+      if (!this.supported.ui || !is.event(event)) {
         return;
       }
 
       var value = 0;
 
       var setProgress = function setProgress(target, input) {
-        var val = is$1.number(input) ? input : 0;
-        var progress = is$1.element(target) ? target : _this4.elements.display.buffer; // Update value and label
+        var val = is.number(input) ? input : 0;
+        var progress = is.element(target) ? target : _this4.elements.display.buffer; // Update value and label
 
-        if (is$1.element(progress)) {
+        if (is.element(progress)) {
           progress.value = val; // Update text label inside
 
           var label = progress.getElementsByTagName('span')[0];
 
-          if (is$1.element(label)) {
+          if (is.element(label)) {
             label.childNodes[0].nodeValue = val;
           }
         }
@@ -2654,9 +2651,9 @@ typeof navigator === "object" && (function (global, factory) {
     // Webkit polyfill for lower fill range
     updateRangeFill: function updateRangeFill(target) {
       // Get range from event if event passed
-      var range = is$1.event(target) ? target.target : target; // Needs to be a valid <input type='range'>
+      var range = is.event(target) ? target.target : target; // Needs to be a valid <input type='range'>
 
-      if (!is$1.element(range) || range.getAttribute('type') !== 'range') {
+      if (!is.element(range) || range.getAttribute('type') !== 'range') {
         return;
       } // Set aria values for https://github.com/sampotts/plyr/issues/905
 
@@ -2665,7 +2662,7 @@ typeof navigator === "object" && (function (global, factory) {
         range.setAttribute('aria-valuenow', this.currentTime);
         var currentTime = controls.formatTime(this.currentTime);
         var duration = controls.formatTime(this.duration);
-        var format = i18n$1.get('seekLabel', this.config);
+        var format = i18n.get('seekLabel', this.config);
         range.setAttribute('aria-valuetext', format.replace('{currentTime}', currentTime).replace('{duration}', duration));
       } else if (matches$1(range, this.config.selectors.inputs.volume)) {
         var percent = range.value * 100;
@@ -2688,7 +2685,7 @@ typeof navigator === "object" && (function (global, factory) {
       var _this5 = this;
 
       // Bail if setting not true
-      if (!this.config.tooltips.seek || !is$1.element(this.elements.inputs.seek) || !is$1.element(this.elements.display.seekTooltip) || this.duration === 0) {
+      if (!this.config.tooltips.seek || !is.element(this.elements.inputs.seek) || !is.element(this.elements.display.seekTooltip) || this.duration === 0) {
         return;
       }
 
@@ -2708,7 +2705,7 @@ typeof navigator === "object" && (function (global, factory) {
       var percent = 0;
       var clientRect = this.elements.progress.getBoundingClientRect();
 
-      if (is$1.event(event)) {
+      if (is.event(event)) {
         percent = 100 / clientRect.width * (event.pageX - clientRect.left);
       } else if (hasClass(this.elements.display.seekTooltip, visible)) {
         percent = parseFloat(this.elements.display.seekTooltip.style.left, 10);
@@ -2729,14 +2726,14 @@ typeof navigator === "object" && (function (global, factory) {
       this.elements.display.seekTooltip.style.setProperty('left', "".concat(percent, "%"), 'important'); // Show/hide the tooltip
       // If the event is a moues in/out and percentage is inside bounds
 
-      if (is$1.event(event) && ['mouseenter', 'mouseleave'].includes(event.type)) {
+      if (is.event(event) && ['mouseenter', 'mouseleave'].includes(event.type)) {
         toggle(event.type === 'mouseenter');
       }
     },
     // Handle time change event
     timeUpdate: function timeUpdate(event) {
       // Only invert if only one time element is displayed and used for both duration and currentTime
-      var invert = !is$1.element(this.elements.display.duration) && this.config.invertTime; // Duration
+      var invert = !is.element(this.elements.display.duration) && this.config.invertTime; // Duration
 
       controls.updateTimeDisplay.call(this, this.elements.display.currentTime, invert ? this.duration - this.currentTime : this.currentTime, invert); // Ignore updates while seeking
 
@@ -2765,12 +2762,12 @@ typeof navigator === "object" && (function (global, factory) {
       } // Update ARIA values
 
 
-      if (is$1.element(this.elements.inputs.seek)) {
+      if (is.element(this.elements.inputs.seek)) {
         this.elements.inputs.seek.setAttribute('aria-valuemax', this.duration);
       } // If there's a spot to display duration
 
 
-      var hasDuration = is$1.element(this.elements.display.duration); // If there's only one time display, display duration there
+      var hasDuration = is.element(this.elements.display.duration); // If there's only one time display, display duration there
 
       if (!hasDuration && this.config.displayDuration && this.paused) {
         controls.updateTimeDisplay.call(this, this.elements.display.currentTime, this.duration);
@@ -2797,14 +2794,14 @@ typeof navigator === "object" && (function (global, factory) {
       if (setting === 'captions') {
         value = this.currentTrack;
       } else {
-        value = !is$1.empty(input) ? input : this[setting]; // Get default
+        value = !is.empty(input) ? input : this[setting]; // Get default
 
-        if (is$1.empty(value)) {
+        if (is.empty(value)) {
           value = this.config[setting].default;
         } // Unsupported value
 
 
-        if (!is$1.empty(this.options[setting]) && !this.options[setting].includes(value)) {
+        if (!is.empty(this.options[setting]) && !this.options[setting].includes(value)) {
           this.debug.warn("Unsupported value of '".concat(value, "' for ").concat(setting));
           return;
         } // Disabled value
@@ -2817,12 +2814,12 @@ typeof navigator === "object" && (function (global, factory) {
       } // Get the list if we need to
 
 
-      if (!is$1.element(list)) {
+      if (!is.element(list)) {
         list = pane && pane.querySelector('[role="menu"]');
       } // If there's no list it means it's not been rendered...
 
 
-      if (!is$1.element(list)) {
+      if (!is.element(list)) {
         return;
       } // Update the label
 
@@ -2832,7 +2829,7 @@ typeof navigator === "object" && (function (global, factory) {
 
       var target = list && list.querySelector("[value=\"".concat(value, "\"]"));
 
-      if (is$1.element(target)) {
+      if (is.element(target)) {
         target.checked = true;
       }
     },
@@ -2840,11 +2837,11 @@ typeof navigator === "object" && (function (global, factory) {
     getLabel: function getLabel(setting, value) {
       switch (setting) {
         case 'speed':
-          return value === 1 ? i18n$1.get('normal', this.config) : "".concat(value, "&times;");
+          return value === 1 ? i18n.get('normal', this.config) : "".concat(value, "&times;");
 
         case 'quality':
-          if (is$1.number(value)) {
-            var label = i18n$1.get("qualityLabel.".concat(value), this.config);
+          if (is.number(value)) {
+            var label = i18n.get("qualityLabel.".concat(value), this.config);
 
             if (!label.length) {
               return "".concat(value, "p");
@@ -2867,21 +2864,21 @@ typeof navigator === "object" && (function (global, factory) {
       var _this6 = this;
 
       // Menu required
-      if (!is$1.element(this.elements.settings.panels.quality)) {
+      if (!is.element(this.elements.settings.panels.quality)) {
         return;
       }
 
       var type = 'quality';
       var list = this.elements.settings.panels.quality.querySelector('[role="menu"]'); // Set options if passed and filter based on uniqueness and config
 
-      if (is$1.array(options)) {
+      if (is.array(options)) {
         this.options.quality = dedupe(options).filter(function (quality) {
           return _this6.config.quality.options.includes(quality);
         });
       } // Toggle the pane and tab
 
 
-      var toggle = !is$1.empty(this.options.quality) && this.options.quality.length > 1;
+      var toggle = !is.empty(this.options.quality) && this.options.quality.length > 1;
       controls.toggleMenuButton.call(this, type, toggle); // Empty the menu
 
       emptyElement(list); // Check if we need to toggle the parent
@@ -2894,7 +2891,7 @@ typeof navigator === "object" && (function (global, factory) {
 
 
       var getBadge = function getBadge(quality) {
-        var label = i18n$1.get("qualityBadge.".concat(quality), _this6.config);
+        var label = i18n.get("qualityBadge.".concat(quality), _this6.config);
 
         if (!label.length) {
           return null;
@@ -2961,7 +2958,7 @@ typeof navigator === "object" && (function (global, factory) {
       var _this7 = this;
 
       // Menu required
-      if (!is$1.element(this.elements.settings.panels.captions)) {
+      if (!is.element(this.elements.settings.panels.captions)) {
         return;
       } // TODO: Captions or language? Currently it's mixed
 
@@ -2996,7 +2993,7 @@ typeof navigator === "object" && (function (global, factory) {
       options.unshift({
         value: -1,
         checked: !this.captions.toggled,
-        title: i18n$1.get('disabled', this.config),
+        title: i18n.get('disabled', this.config),
         list: list,
         type: 'language'
       }); // Generate options
@@ -3009,7 +3006,7 @@ typeof navigator === "object" && (function (global, factory) {
       var _this8 = this;
 
       // Menu required
-      if (!is$1.element(this.elements.settings.panels.speed)) {
+      if (!is.element(this.elements.settings.panels.speed)) {
         return;
       }
 
@@ -3020,7 +3017,7 @@ typeof navigator === "object" && (function (global, factory) {
         return o >= _this8.minimumSpeed && o <= _this8.maximumSpeed;
       }); // Toggle the pane and tab
 
-      var toggle = !is$1.empty(this.options.speed) && this.options.speed.length > 1;
+      var toggle = !is.empty(this.options.speed) && this.options.speed.length > 1;
       controls.toggleMenuButton.call(this, type, toggle); // Empty the menu
 
       emptyElement(list); // Check if we need to toggle the parent
@@ -3045,7 +3042,7 @@ typeof navigator === "object" && (function (global, factory) {
     // Check if we need to hide/show the settings menu
     checkMenu: function checkMenu() {
       var buttons = this.elements.settings.buttons;
-      var visible = !is$1.empty(buttons) && Object.values(buttons).some(function (button) {
+      var visible = !is.empty(buttons) && Object.values(buttons).some(function (button) {
         return !button.hidden;
       });
       toggleHidden(this.elements.settings.menu, !visible);
@@ -3060,7 +3057,7 @@ typeof navigator === "object" && (function (global, factory) {
 
       var target = pane;
 
-      if (!is$1.element(target)) {
+      if (!is.element(target)) {
         target = Object.values(this.elements.settings.panels).find(function (p) {
           return !p.hidden;
         });
@@ -3074,7 +3071,7 @@ typeof navigator === "object" && (function (global, factory) {
       var popup = this.elements.settings.popup;
       var button = this.elements.buttons.settings; // Menu and button are required
 
-      if (!is$1.element(popup) || !is$1.element(button)) {
+      if (!is.element(popup) || !is.element(button)) {
         return;
       } // True toggle by default
 
@@ -3082,14 +3079,14 @@ typeof navigator === "object" && (function (global, factory) {
       var hidden = popup.hidden;
       var show = hidden;
 
-      if (is$1.boolean(input)) {
+      if (is.boolean(input)) {
         show = input;
-      } else if (is$1.keyboardEvent(input) && input.which === 27) {
+      } else if (is.keyboardEvent(input) && input.which === 27) {
         show = false;
-      } else if (is$1.event(input)) {
+      } else if (is.event(input)) {
         // If Plyr is in a shadowDOM, the event target is set to the component, instead of the
         // Element in the shadowDOM. The path, if available, is complete.
-        var target = is$1.function(input.composedPath) ? input.composedPath()[0] : input.target;
+        var target = is.function(input.composedPath) ? input.composedPath()[0] : input.target;
         var isMenuItem = popup.contains(target); // If the click was inside the menu or if the click
         // wasn't the button or menu item and we're trying to
         // show the menu (a doc click shouldn't show the menu)
@@ -3106,11 +3103,11 @@ typeof navigator === "object" && (function (global, factory) {
 
       toggleClass(this.elements.container, this.config.classNames.menu.open, show); // Focus the first item if key interaction
 
-      if (show && is$1.keyboardEvent(input)) {
+      if (show && is.keyboardEvent(input)) {
         controls.focusFirstMenuItem.call(this, null, true);
       } else if (!show && !hidden) {
         // If closing, re-focus the button
-        setFocus.call(this, button, is$1.keyboardEvent(input));
+        setFocus.call(this, button, is.keyboardEvent(input));
       }
     },
     // Get the natural size of a menu panel
@@ -3139,7 +3136,7 @@ typeof navigator === "object" && (function (global, factory) {
       var tabFocus = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       var target = this.elements.container.querySelector("#ggs-plyr-settings-".concat(this.id, "-").concat(type)); // Nothing to show, bail
 
-      if (!is$1.element(target)) {
+      if (!is.element(target)) {
         return;
       } // Hide all other panels
 
@@ -3187,7 +3184,7 @@ typeof navigator === "object" && (function (global, factory) {
     setDownloadUrl: function setDownloadUrl() {
       var button = this.elements.buttons.download; // Bail if no button
 
-      if (!is$1.element(button)) {
+      if (!is.element(button)) {
         return;
       } // Set attribute
 
@@ -3208,7 +3205,7 @@ typeof navigator === "object" && (function (global, factory) {
           showMenuPanel = controls.showMenuPanel;
       this.elements.controls = null; // Larger overlaid play button
 
-      if (is$1.array(this.config.controls) && this.config.controls.includes('play-large')) {
+      if (is.array(this.config.controls) && this.config.controls.includes('play-large')) {
         this.elements.container.appendChild(createButton.call(this, 'play-large'));
       } // Create the container
 
@@ -3220,7 +3217,7 @@ typeof navigator === "object" && (function (global, factory) {
         class: 'ggs-plyr__controls__item'
       }; // Loop through controls in order
 
-      dedupe(is$1.array(this.config.controls) ? this.config.controls : []).forEach(function (control) {
+      dedupe(is.array(this.config.controls) ? this.config.controls : []).forEach(function (control) {
         // Restart button
         if (control === 'restart') {
           container.appendChild(createButton.call(_this10, 'restart', defaultAttributes));
@@ -3282,7 +3279,7 @@ typeof navigator === "object" && (function (global, factory) {
         if (control === 'mute' || control === 'volume') {
           var volume = _this10.elements.volume; // Create the volume container if needed
 
-          if (!is$1.element(volume) || !container.contains(volume)) {
+          if (!is.element(volume) || !container.contains(volume)) {
             volume = createElement('div', extend({}, defaultAttributes, {
               class: "".concat(defaultAttributes.class, " ggs-plyr__volume").trim()
             }));
@@ -3318,7 +3315,7 @@ typeof navigator === "object" && (function (global, factory) {
         } // Settings button / menu
 
 
-        if (control === 'settings' && !is$1.empty(_this10.config.settings)) {
+        if (control === 'settings' && !is.empty(_this10.config.settings)) {
           var wrapper = createElement('div', extend({}, defaultAttributes, {
             class: "".concat(defaultAttributes.class, " ggs-plyr__menu").trim(),
             hidden: ''
@@ -3360,7 +3357,7 @@ typeof navigator === "object" && (function (global, factory) {
             on.call(_this10, menuItem, 'click', function () {
               showMenuPanel.call(_this10, type, false);
             });
-            var flex = createElement('span', null, i18n$1.get(type, _this10.config));
+            var flex = createElement('span', null, i18n.get(type, _this10.config));
             var value = createElement('span', {
               class: _this10.config.classNames.menu.value
             }); // Speed contains HTML entities
@@ -3382,11 +3379,11 @@ typeof navigator === "object" && (function (global, factory) {
 
             backButton.appendChild(createElement('span', {
               'aria-hidden': true
-            }, i18n$1.get(type, _this10.config))); // Screen reader label
+            }, i18n.get(type, _this10.config))); // Screen reader label
 
             backButton.appendChild(createElement('span', {
               class: _this10.config.classNames.hidden
-            }, i18n$1.get('menuBack', _this10.config))); // Go back via keyboard
+            }, i18n.get('menuBack', _this10.config))); // Go back via keyboard
 
             on.call(_this10, pane, 'keydown', function (event) {
               // We only care about <-
@@ -3447,7 +3444,7 @@ typeof navigator === "object" && (function (global, factory) {
 
           var download = _this10.config.urls.download;
 
-          if (!is$1.url(download) && _this10.isEmbed) {
+          if (!is.url(download) && _this10.isEmbed) {
             extend(_attributes, {
               icon: "logo-".concat(_this10.provider),
               label: _this10.provider
@@ -3496,7 +3493,7 @@ typeof navigator === "object" && (function (global, factory) {
       };
       var update = true; // If function, run it and use output
 
-      if (is$1.function(this.config.controls)) {
+      if (is.function(this.config.controls)) {
         this.config.controls = this.config.controls.call(this, props);
       } // Convert falsy controls to empty array (primarily for empty strings)
 
@@ -3505,7 +3502,7 @@ typeof navigator === "object" && (function (global, factory) {
         this.config.controls = [];
       }
 
-      if (is$1.element(this.config.controls) || is$1.string(this.config.controls)) {
+      if (is.element(this.config.controls) || is.string(this.config.controls)) {
         // HTMLElement or Non-empty string passed as the option
         container = this.config.controls;
       } else {
@@ -3537,7 +3534,7 @@ typeof navigator === "object" && (function (global, factory) {
 
 
       if (update) {
-        if (is$1.string(this.config.controls)) {
+        if (is.string(this.config.controls)) {
           container = replace(container);
         }
       } // Controls container
@@ -3545,25 +3542,25 @@ typeof navigator === "object" && (function (global, factory) {
 
       var target; // Inject to custom location
 
-      if (is$1.string(this.config.selectors.controls.container)) {
+      if (is.string(this.config.selectors.controls.container)) {
         target = document.querySelector(this.config.selectors.controls.container);
       } // Inject into the container by default
 
 
-      if (!is$1.element(target)) {
+      if (!is.element(target)) {
         target = this.elements.container;
       } // Inject controls HTML (needs to be before captions, hence "afterbegin")
 
 
-      var insertMethod = is$1.element(container) ? 'insertAdjacentElement' : 'insertAdjacentHTML';
+      var insertMethod = is.element(container) ? 'insertAdjacentElement' : 'insertAdjacentHTML';
       target[insertMethod]('afterbegin', container); // Find the elements if need be
 
-      if (!is$1.element(this.elements.controls)) {
+      if (!is.element(this.elements.controls)) {
         controls.findElements.call(this);
       } // Add pressed property to buttons
 
 
-      if (!is$1.empty(this.elements.buttons)) {
+      if (!is.empty(this.elements.buttons)) {
         var addProperty = function addProperty(button) {
           var className = _this11.config.classNames.controlPressed;
           Object.defineProperty(button, 'pressed', {
@@ -3580,7 +3577,7 @@ typeof navigator === "object" && (function (global, factory) {
 
 
         Object.values(this.elements.buttons).filter(Boolean).forEach(function (button) {
-          if (is$1.array(button) || is$1.nodeList(button)) {
+          if (is.array(button) || is.nodeList(button)) {
             Array.from(button).filter(Boolean).forEach(addProperty);
           } else {
             addProperty(button);
@@ -3642,7 +3639,7 @@ typeof navigator === "object" && (function (global, factory) {
         } // Ignore double click in controls
 
 
-        if (is$1.element(_this.player.elements.controls) && _this.player.elements.controls.contains(event.target)) {
+        if (is.element(_this.player.elements.controls) && _this.player.elements.controls.contains(event.target)) {
           return;
         }
 
@@ -3667,7 +3664,7 @@ typeof navigator === "object" && (function (global, factory) {
 
         var button = this.player.elements.buttons.fullscreen;
 
-        if (is$1.element(button)) {
+        if (is.element(button)) {
           button.pressed = this.active;
         } // Always trigger events on the plyr / media element (not a fullscreen container) and let them bubble up
 
@@ -3711,7 +3708,7 @@ typeof navigator === "object" && (function (global, factory) {
           } // Check if the property already exists
 
 
-          var hasProperty = is$1.string(viewport.content) && viewport.content.includes(property);
+          var hasProperty = is.string(viewport.content) && viewport.content.includes(property);
 
           if (toggle) {
             this.cleanupViewport = !hasProperty;
@@ -3797,7 +3794,7 @@ typeof navigator === "object" && (function (global, factory) {
           this.target.requestFullscreen({
             navigationUI: 'hide'
           });
-        } else if (!is$1.empty(this.prefix)) {
+        } else if (!is.empty(this.prefix)) {
           this.target["".concat(this.prefix, "Request").concat(this.property)]();
         }
       } // Bail from fullscreen
@@ -3817,7 +3814,7 @@ typeof navigator === "object" && (function (global, factory) {
           this.toggleFallback(false);
         } else if (!this.prefix) {
           (document.cancelFullScreen || document.exitFullscreen).call(document);
-        } else if (!is$1.empty(this.prefix)) {
+        } else if (!is.empty(this.prefix)) {
           var action = this.prefix === 'moz' ? 'Cancel' : 'Exit';
           document["".concat(this.prefix).concat(action).concat(this.property)]();
         }
@@ -3876,7 +3873,7 @@ typeof navigator === "object" && (function (global, factory) {
       key: "prefix",
       get: function get() {
         // No prefix
-        if (is$1.function(document.exitFullscreen)) {
+        if (is.function(document.exitFullscreen)) {
           return '';
         } // Check for fullscreen support by vendor prefix
 
@@ -3884,7 +3881,7 @@ typeof navigator === "object" && (function (global, factory) {
         var value = '';
         var prefixes = ['webkit', 'moz', 'ms'];
         prefixes.some(function (pre) {
-          if (is$1.function(document["".concat(pre, "ExitFullscreen")]) || is$1.function(document["".concat(pre, "CancelFullScreen")])) {
+          if (is.function(document["".concat(pre, "ExitFullscreen")]) || is.function(document["".concat(pre, "CancelFullScreen")])) {
             value = pre;
             return true;
           }
@@ -3959,7 +3956,7 @@ typeof navigator === "object" && (function (global, factory) {
       } // Inject custom controls if not present
 
 
-      if (!is$1.element(this.elements.controls)) {
+      if (!is.element(this.elements.controls)) {
         // Inject custom controls
         controls.inject.call(this); // Re-attach control listeners
 
@@ -4019,9 +4016,9 @@ typeof navigator === "object" && (function (global, factory) {
     // Setup aria attribute for play and iframe title
     setTitle: function setTitle() {
       // Find the current text
-      var label = i18n$1.get('play', this.config); // If there's a media title set, use that for the label
+      var label = i18n.get('play', this.config); // If there's a media title set, use that for the label
 
-      if (is$1.string(this.config.title) && !is$1.empty(this.config.title)) {
+      if (is.string(this.config.title) && !is.empty(this.config.title)) {
         label += ", ".concat(this.config.title);
       } // If there's a play button, set label
 
@@ -4034,13 +4031,13 @@ typeof navigator === "object" && (function (global, factory) {
       if (this.isEmbed) {
         var iframe = getElement.call(this, 'iframe');
 
-        if (!is$1.element(iframe)) {
+        if (!is.element(iframe)) {
           return;
         } // Default to media type
 
 
-        var title = !is$1.empty(this.config.title) ? this.config.title : 'video';
-        var format = i18n$1.get('frameTitle', this.config);
+        var title = !is.empty(this.config.title) ? this.config.title : 'video';
+        var format = i18n.get('frameTitle', this.config);
         iframe.setAttribute('title', format.replace('{title}', title));
       }
     },
@@ -4103,10 +4100,10 @@ typeof navigator === "object" && (function (global, factory) {
         Object.assign(target, {
           pressed: _this3.playing
         });
-        target.setAttribute('aria-label', i18n$1.get(_this3.playing ? 'pause' : 'play', _this3.config));
+        target.setAttribute('aria-label', i18n.get(_this3.playing ? 'pause' : 'play', _this3.config));
       }); // Only update controls on non timeupdate events
 
-      if (is$1.event(event) && event.type === 'timeupdate') {
+      if (is.event(event) && event.type === 'timeupdate') {
         return;
       } // Toggle controls
 
@@ -4146,7 +4143,7 @@ typeof navigator === "object" && (function (global, factory) {
       // Loop through values (as they are the keys when the object is spread 🤔)
       Object.values(_objectSpread2({}, this.media.style)) // We're only fussed about Plyr specific properties
       .filter(function (key) {
-        return !is$1.empty(key) && is$1.string(key) && key.startsWith('--plyr');
+        return !is.empty(key) && is.string(key) && key.startsWith('--plyr');
       }).forEach(function (key) {
         // Set on the container
         _this5.elements.container.style.setProperty(key, _this5.media.style.getPropertyValue(key), 'important'); // Clean up from media element
@@ -4155,7 +4152,7 @@ typeof navigator === "object" && (function (global, factory) {
         _this5.media.style.removeProperty(key);
       }); // Remove attribute if empty
 
-      if (is$1.empty(this.media.style)) {
+      if (is.empty(this.media.style)) {
         this.media.removeAttribute('style');
       }
     }
@@ -4191,7 +4188,7 @@ typeof navigator === "object" && (function (global, factory) {
         // Firefox doesn't get the keycode for whatever reason
 
 
-        if (!is$1.number(code)) {
+        if (!is.number(code)) {
           return;
         } // Seek by the number keys
 
@@ -4209,7 +4206,7 @@ typeof navigator === "object" && (function (global, factory) {
           // and any that accept key input http://webaim.org/techniques/keyboard/
           var focused = document.activeElement;
 
-          if (is$1.element(focused)) {
+          if (is.element(focused)) {
             var editable = player.config.selectors.editable;
             var seek = elements.inputs.seek;
 
@@ -4488,7 +4485,7 @@ typeof navigator === "object" && (function (global, factory) {
           } // If it's not an embed and no ratio specified
 
 
-          if (!player.isEmbed && is$1.empty(player.config.ratio)) {
+          if (!player.isEmbed && is.empty(player.config.ratio)) {
             return;
           }
 
@@ -4564,7 +4561,7 @@ typeof navigator === "object" && (function (global, factory) {
           // Re-fetch the wrapper
           var wrapper = getElement.call(player, ".".concat(player.config.classNames.video)); // Bail if there's no wrapper (this should never happen)
 
-          if (!is$1.element(wrapper)) {
+          if (!is.element(wrapper)) {
             return;
           } // On click play, pause or restart
 
@@ -4649,7 +4646,7 @@ typeof navigator === "object" && (function (global, factory) {
       value: function proxy(event, defaultHandler, customHandlerKey) {
         var player = this.player;
         var customHandler = player.config.listeners[customHandlerKey];
-        var hasCustomHandler = is$1.function(customHandler);
+        var hasCustomHandler = is.function(customHandler);
         var returned = true; // Execute custom handler
 
         if (hasCustomHandler) {
@@ -4657,7 +4654,7 @@ typeof navigator === "object" && (function (global, factory) {
         } // Only call default handler if not prevented in custom handler
 
 
-        if (returned !== false && is$1.function(defaultHandler)) {
+        if (returned !== false && is.function(defaultHandler)) {
           defaultHandler.call(player, event);
         }
       } // Trigger custom and default handlers
@@ -4670,7 +4667,7 @@ typeof navigator === "object" && (function (global, factory) {
         var passive = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
         var player = this.player;
         var customHandler = player.config.listeners[customHandlerKey];
-        var hasCustomHandler = is$1.function(customHandler);
+        var hasCustomHandler = is.function(customHandler);
         on.call(player, element, type, function (event) {
           return _this2.proxy(event, defaultHandler, customHandlerKey);
         }, passive && !hasCustomHandler);
@@ -4782,7 +4779,7 @@ typeof navigator === "object" && (function (global, factory) {
           var code = event.keyCode ? event.keyCode : event.which;
           var attribute = 'play-on-seeked';
 
-          if (is$1.keyboardEvent(event) && code !== 39 && code !== 37) {
+          if (is.keyboardEvent(event) && code !== 39 && code !== 37) {
             return;
           } // Record seek time so we can prevent hiding controls for a few seconds after seek
 
@@ -4819,7 +4816,7 @@ typeof navigator === "object" && (function (global, factory) {
 
           var seekTo = seek.getAttribute('seek-value');
 
-          if (is$1.empty(seekTo)) {
+          if (is.empty(seekTo)) {
             seekTo = seek.value;
           }
 
@@ -4873,7 +4870,7 @@ typeof navigator === "object" && (function (global, factory) {
         // Only if one time element is used for both currentTime and duration
 
 
-        if (player.config.toggleInvert && !is$1.element(elements.display.duration)) {
+        if (player.config.toggleInvert && !is.element(elements.display.duration)) {
           this.bind(elements.display.currentTime, 'click', function () {
             // Do nothing if we're at the start
             if (player.currentTime === 0) {
@@ -5055,11 +5052,11 @@ typeof navigator === "object" && (function (global, factory) {
     insertElements: function insertElements(type, attributes) {
       var _this = this;
 
-      if (is$1.string(attributes)) {
+      if (is.string(attributes)) {
         insertElement(type, this.media, {
           src: attributes
         });
-      } else if (is$1.array(attributes)) {
+      } else if (is.array(attributes)) {
         attributes.forEach(function (attribute) {
           insertElement(type, _this.media, attribute);
         });
@@ -5085,7 +5082,7 @@ typeof navigator === "object" && (function (global, factory) {
         removeElement(_this2.media);
         _this2.media = null; // Reset class name
 
-        if (is$1.element(_this2.elements.container)) {
+        if (is.element(_this2.elements.container)) {
           _this2.elements.container.removeAttribute('class');
         } // Set the type and provider
 
@@ -5115,7 +5112,7 @@ typeof navigator === "object" && (function (global, factory) {
         _this2.elements.container.appendChild(_this2.media); // Autoplay the new source?
 
 
-        if (is$1.boolean(input.autoplay)) {
+        if (is.boolean(input.autoplay)) {
           _this2.config.autoplay = input.autoplay;
         } // Set attributes for audio and video
 
@@ -5129,7 +5126,7 @@ typeof navigator === "object" && (function (global, factory) {
             _this2.media.setAttribute('autoplay', '');
           }
 
-          if (!is$1.empty(input.poster)) {
+          if (!is.empty(input.poster)) {
             _this2.poster = input.poster;
           }
 
@@ -5177,7 +5174,7 @@ typeof navigator === "object" && (function (global, factory) {
         } // Update previewThumbnails config & reload plugin
 
 
-        if (!is$1.empty(input.previewThumbnails)) {
+        if (!is.empty(input.previewThumbnails)) {
           Object.assign(_this2.config.previewThumbnails, input.previewThumbnails); // Cleanup previewThumbnails plugin if it was loaded
 
           if (_this2.previewThumbnails && _this2.previewThumbnails.loaded) {
@@ -5250,7 +5247,7 @@ typeof navigator === "object" && (function (global, factory) {
   var myDumpProgress = document.createElement('progress');
 
   var myIsElm = function myIsElm(v) {
-    return is$1.element(v);
+    return is.element(v);
   };
 
   var myIsVideo = function myIsVideo(v) {
@@ -5274,8 +5271,8 @@ typeof navigator === "object" && (function (global, factory) {
   };
 
   var myMock = function myMock(obj) {
-    var keys = is$1.array(obj) ? Object.keys(obj) : Object.getOwnPropertyNames(obj);
-    var dumb = is$1.array(obj) ? [] : {};
+    var keys = is.array(obj) ? Object.keys(obj) : Object.getOwnPropertyNames(obj);
+    var dumb = is.array(obj) ? [] : {};
 
     for (var index = 0, length = keys.length; index !== length; index += 1) {
       var key = keys[index];
@@ -5303,12 +5300,12 @@ typeof navigator === "object" && (function (global, factory) {
 
       this.media = target; // String selector passed
 
-      if (is$1.string(this.media)) {
+      if (is.string(this.media)) {
         this.media = document.querySelectorAll(this.media);
       } // jQuery, NodeList or Array passed, use first element
 
 
-      if (window.jQuery && this.media instanceof jQuery || is$1.nodeList(this.media) || is$1.array(this.media)) {
+      if (window.jQuery && this.media instanceof jQuery || is.nodeList(this.media) || is.array(this.media)) {
         // eslint-disable-next-line
         this.media = this.media[0];
       } // Set config
@@ -5359,7 +5356,7 @@ typeof navigator === "object" && (function (global, factory) {
       this.debug.log('Config', this.config);
       this.debug.log('Support', support); // We need an element to setup
 
-      if (is$1.nullOrUndefined(this.media) || !is$1.element(this.media)) {
+      if (is.nullOrUndefined(this.media) || !is.element(this.media)) {
         this.debug.error('Setup failed: no suitable element passed');
         return;
       } // Bail if the element is initialized
@@ -5399,7 +5396,7 @@ typeof navigator === "object" && (function (global, factory) {
           // Find the frame
           iframe = this.media.querySelector('iframe'); // <iframe> type
 
-          if (is$1.element(iframe)) {
+          if (is.element(iframe)) {
             // Detect provider
             url = parseUrl(iframe.getAttribute('src'));
             this.provider = getProviderByUrl(url.toString()); // Rework elements
@@ -5437,7 +5434,7 @@ typeof navigator === "object" && (function (global, factory) {
           } // Unsupported or missing provider
 
 
-          if (is$1.empty(this.provider) || !Object.keys(providers).includes(this.provider)) {
+          if (is.empty(this.provider) || !Object.keys(providers).includes(this.provider)) {
             this.debug.error('Setup failed: Invalid provider');
             return;
           } // Audio will come later for external providers
@@ -5494,7 +5491,7 @@ typeof navigator === "object" && (function (global, factory) {
 
       this.media.plyr = this; // Wrap media
 
-      if (!is$1.element(this.elements.container)) {
+      if (!is.element(this.elements.container)) {
         this.elements.container = createElement('div', {
           tabindex: 0
         });
@@ -5562,7 +5559,7 @@ typeof navigator === "object" && (function (global, factory) {
       value: function play() {
         var _this2 = this;
 
-        if (!is$1.function(this.media.play)) {
+        if (!is.function(this.media.play)) {
           return null;
         } // Intecept play with ads
 
@@ -5585,7 +5582,7 @@ typeof navigator === "object" && (function (global, factory) {
     }, {
       key: "pause",
       value: function pause() {
-        if (!this.playing || !is$1.function(this.media.pause)) {
+        if (!this.playing || !is.function(this.media.pause)) {
           return null;
         }
 
@@ -5604,7 +5601,7 @@ typeof navigator === "object" && (function (global, factory) {
        */
       value: function togglePlay(input) {
         // Toggle based on current state if nothing passed
-        var toggle = is$1.boolean(input) ? input : !this.playing;
+        var toggle = is.boolean(input) ? input : !this.playing;
 
         if (toggle) {
           return this.play();
@@ -5622,7 +5619,7 @@ typeof navigator === "object" && (function (global, factory) {
         if (this.isHTML5) {
           this.pause();
           this.restart();
-        } else if (is$1.function(this.media.stop)) {
+        } else if (is.function(this.media.stop)) {
           this.media.stop();
         }
       }
@@ -5643,7 +5640,7 @@ typeof navigator === "object" && (function (global, factory) {
     }, {
       key: "rewind",
       value: function rewind(seekTime) {
-        this.currentTime -= is$1.number(seekTime) ? seekTime : this.config.seekTime;
+        this.currentTime -= is.number(seekTime) ? seekTime : this.config.seekTime;
       }
       /**
        * Fast forward
@@ -5653,7 +5650,7 @@ typeof navigator === "object" && (function (global, factory) {
     }, {
       key: "forward",
       value: function forward(seekTime) {
-        this.currentTime += is$1.number(seekTime) ? seekTime : this.config.seekTime;
+        this.currentTime += is.number(seekTime) ? seekTime : this.config.seekTime;
       }
       /**
        * Seek to a time
@@ -5669,7 +5666,7 @@ typeof navigator === "object" && (function (global, factory) {
        */
       value: function increaseVolume(step) {
         var volume = this.media.muted ? 0 : this.volume;
-        this.volume = volume + (is$1.number(step) ? step : 0);
+        this.volume = volume + (is.number(step) ? step : 0);
       }
       /**
        * Decrease volume
@@ -5731,7 +5728,7 @@ typeof navigator === "object" && (function (global, factory) {
 
           var hiding = toggleClass(this.elements.container, this.config.classNames.hideControls, force); // Close menu
 
-          if (hiding && is$1.array(this.config.controls) && this.config.controls.includes('settings') && !is$1.empty(this.config.settings)) {
+          if (hiding && is.array(this.config.controls) && this.config.controls.includes('settings') && !is.empty(this.config.settings)) {
             controls.toggleMenu.call(this, false);
           } // Trigger event on change
 
@@ -5819,7 +5816,7 @@ typeof navigator === "object" && (function (global, factory) {
             } // Callback
 
 
-            if (is$1.function(callback)) {
+            if (is.function(callback)) {
               callback();
             }
           } else {
@@ -5832,7 +5829,7 @@ typeof navigator === "object" && (function (global, factory) {
 
             triggerEvent.call(_this3, _this3.elements.original, 'destroyed', true); // Callback
 
-            if (is$1.function(callback)) {
+            if (is.function(callback)) {
               callback.call(_this3.elements.original);
             } // Reset state
 
@@ -5861,7 +5858,7 @@ typeof navigator === "object" && (function (global, factory) {
           clearInterval(this.timers.buffering);
           clearInterval(this.timers.playing); // Destroy YouTube API
 
-          if (this.embed !== null && is$1.function(this.embed.destroy)) {
+          if (this.embed !== null && is.function(this.embed.destroy)) {
             this.embed.destroy();
           } // Clean up
 
@@ -5966,7 +5963,7 @@ typeof navigator === "object" && (function (global, factory) {
         } // Validate input
 
 
-        var inputIsValid = is$1.number(input) && input > 0; // Set
+        var inputIsValid = is.number(input) && input > 0; // Set
 
         this.media.currentTime = inputIsValid ? Math.min(input, this.duration) : 0; // Logging
 
@@ -5988,7 +5985,7 @@ typeof navigator === "object" && (function (global, factory) {
       get: function get() {
         var buffered = this.media.buffered; // YouTube / Vimeo return a float between 0-1
 
-        if (is$1.number(buffered)) {
+        if (is.number(buffered)) {
           return buffered;
         } // HTML5
         // TODO: Handle buffered chunks of the media
@@ -6021,7 +6018,7 @@ typeof navigator === "object" && (function (global, factory) {
         var fauxDuration = parseFloat(this.config.duration); // Media duration can be NaN or Infinity before the media has loaded
 
         var realDuration = (this.media || {}).duration;
-        var duration = !is$1.number(realDuration) || realDuration === Infinity ? 0 : realDuration; // If config duration is funky, use regular duration
+        var duration = !is.number(realDuration) || realDuration === Infinity ? 0 : realDuration; // If config duration is funky, use regular duration
 
         return fauxDuration || duration;
       }
@@ -6037,17 +6034,17 @@ typeof navigator === "object" && (function (global, factory) {
         var max = 1;
         var min = 0;
 
-        if (is$1.string(volume)) {
+        if (is.string(volume)) {
           volume = Number(volume);
         } // Load volume from storage if no value specified
 
 
-        if (!is$1.number(volume)) {
+        if (!is.number(volume)) {
           volume = this.storage.get('volume');
         } // Use config if all else fails
 
 
-        if (!is$1.number(volume)) {
+        if (!is.number(volume)) {
           volume = this.config.volume;
         } // Maximum is volumeMax
 
@@ -6066,7 +6063,7 @@ typeof navigator === "object" && (function (global, factory) {
 
         this.media.volume = volume; // If muted, and we're increasing volume manually, reset muted state
 
-        if (!is$1.empty(value) && this.muted && volume > 0) {
+        if (!is.empty(value) && this.muted && volume > 0) {
           this.muted = false;
         }
       }
@@ -6082,12 +6079,12 @@ typeof navigator === "object" && (function (global, factory) {
       set: function set(mute) {
         var toggle = mute; // Load muted state from storage
 
-        if (!is$1.boolean(toggle)) {
+        if (!is.boolean(toggle)) {
           toggle = this.storage.get('muted');
         } // Use config if all else fails
 
 
-        if (!is$1.boolean(toggle)) {
+        if (!is.boolean(toggle)) {
           toggle = this.config.muted;
         } // Update config
 
@@ -6134,15 +6131,15 @@ typeof navigator === "object" && (function (global, factory) {
 
         var speed = null;
 
-        if (is$1.number(input)) {
+        if (is.number(input)) {
           speed = input;
         }
 
-        if (!is$1.number(speed)) {
+        if (!is.number(speed)) {
           speed = this.storage.get('speed');
         }
 
-        if (!is$1.number(speed)) {
+        if (!is.number(speed)) {
           speed = this.config.speed.selected;
         } // Clamp to min/max
 
@@ -6220,7 +6217,7 @@ typeof navigator === "object" && (function (global, factory) {
           return;
         }
 
-        var quality = [!is$1.empty(input) && Number(input), this.storage.get('quality'), config.selected, config.default].find(is$1.number);
+        var quality = [!is.empty(input) && Number(input), this.storage.get('quality'), config.selected, config.default].find(is.number);
         var updateStorage = true;
 
         if (!options.includes(quality)) {
@@ -6258,7 +6255,7 @@ typeof navigator === "object" && (function (global, factory) {
     }, {
       key: "loop",
       set: function set(input) {
-        var toggle = is$1.boolean(input) ? input : this.config.loop.active;
+        var toggle = is.boolean(input) ? input : this.config.loop.active;
         this.config.loop.active = toggle;
         this.media.loop = toggle; // Set default to be a true toggle
 
@@ -6331,14 +6328,14 @@ typeof navigator === "object" && (function (global, factory) {
       key: "download",
       get: function get() {
         var download = this.config.urls.download;
-        return is$1.url(download) ? download : this.source;
+        return is.url(download) ? download : this.source;
       }
       /**
        * Set the download URL
        */
       ,
       set: function set(input) {
-        if (!is$1.url(input)) {
+        if (!is.url(input)) {
           return;
         }
 
@@ -6383,7 +6380,7 @@ typeof navigator === "object" && (function (global, factory) {
         }
 
         var ratio = reduceAspectRatio(getAspectRatio.call(this));
-        return is$1.array(ratio) ? ratio.join(':') : ratio;
+        return is.array(ratio) ? ratio.join(':') : ratio;
       }
       /**
        * Set video aspect ratio
@@ -6395,7 +6392,7 @@ typeof navigator === "object" && (function (global, factory) {
           return;
         }
 
-        if (!is$1.string(input) || !validateRatio(input)) {
+        if (!is.string(input) || !validateRatio(input)) {
           this.debug.error("Invalid aspect ratio specified (".concat(input, ")"));
           return;
         }
@@ -6411,7 +6408,7 @@ typeof navigator === "object" && (function (global, factory) {
     }, {
       key: "autoplay",
       set: function set(input) {
-        var toggle = is$1.boolean(input) ? input : this.config.autoplay;
+        var toggle = is.boolean(input) ? input : this.config.autoplay;
         this.config.autoplay = toggle;
       }
       /**
@@ -6469,15 +6466,15 @@ typeof navigator === "object" && (function (global, factory) {
         } // Toggle based on current state if not passed
 
 
-        var toggle = is$1.boolean(input) ? input : !this.pip; // Toggle based on current state
+        var toggle = is.boolean(input) ? input : !this.pip; // Toggle based on current state
         // Safari
 
-        if (is$1.function(this.media.webkitSetPresentationMode)) {
+        if (is.function(this.media.webkitSetPresentationMode)) {
           this.media.webkitSetPresentationMode(toggle ? pip.active : pip.inactive);
         } // Chrome
 
 
-        if (is$1.function(this.media.requestPictureInPicture)) {
+        if (is.function(this.media.requestPictureInPicture)) {
           if (!this.pip && toggle) {
             this.media.requestPictureInPicture();
           } else if (this.pip && !toggle) {
@@ -6495,7 +6492,7 @@ typeof navigator === "object" && (function (global, factory) {
         } // Safari
 
 
-        if (!is$1.empty(this.media.webkitPresentationMode)) {
+        if (!is.empty(this.media.webkitPresentationMode)) {
           return this.media.webkitPresentationMode === pip.active;
         } // Chrome
 
@@ -6530,15 +6527,15 @@ typeof navigator === "object" && (function (global, factory) {
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         var targets = null;
 
-        if (is$1.string(selector)) {
+        if (is.string(selector)) {
           targets = Array.from(document.querySelectorAll(selector));
-        } else if (is$1.nodeList(selector)) {
+        } else if (is.nodeList(selector)) {
           targets = Array.from(selector);
-        } else if (is$1.array(selector)) {
-          targets = selector.filter(is$1.element);
+        } else if (is.array(selector)) {
+          targets = selector.filter(is.element);
         }
 
-        if (is$1.empty(targets)) {
+        if (is.empty(targets)) {
           return null;
         }
 

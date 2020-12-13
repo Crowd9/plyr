@@ -19,7 +19,7 @@ typeof navigator === "object" && (function () {
 	  check(typeof self == 'object' && self) ||
 	  check(typeof commonjsGlobal == 'object' && commonjsGlobal) ||
 	  // eslint-disable-next-line no-new-func
-	  (function () { return this; })() || Function('return this')();
+	  Function('return this')();
 
 	var fails = function (exec) {
 	  try {
@@ -214,7 +214,7 @@ typeof navigator === "object" && (function () {
 	(module.exports = function (key, value) {
 	  return sharedStore[key] || (sharedStore[key] = value !== undefined ? value : {});
 	})('versions', []).push({
-	  version: '3.8.1',
+	  version: '3.6.5',
 	  mode:  'global',
 	  copyright: '© 2020 Denis Pushkarev (zloirock.ru)'
 	});
@@ -252,12 +252,11 @@ typeof navigator === "object" && (function () {
 	};
 
 	if (nativeWeakMap) {
-	  var store$1 = sharedStore.state || (sharedStore.state = new WeakMap$2());
+	  var store$1 = new WeakMap$2();
 	  var wmget = store$1.get;
 	  var wmhas = store$1.has;
 	  var wmset = store$1.set;
 	  set = function (it, metadata) {
-	    metadata.facade = it;
 	    wmset.call(store$1, it, metadata);
 	    return metadata;
 	  };
@@ -271,7 +270,6 @@ typeof navigator === "object" && (function () {
 	  var STATE = sharedKey('state');
 	  hiddenKeys[STATE] = true;
 	  set = function (it, metadata) {
-	    metadata.facade = it;
 	    createNonEnumerableProperty(it, STATE, metadata);
 	    return metadata;
 	  };
@@ -300,15 +298,9 @@ typeof navigator === "object" && (function () {
 	  var unsafe = options ? !!options.unsafe : false;
 	  var simple = options ? !!options.enumerable : false;
 	  var noTargetGet = options ? !!options.noTargetGet : false;
-	  var state;
 	  if (typeof value == 'function') {
-	    if (typeof key == 'string' && !has(value, 'name')) {
-	      createNonEnumerableProperty(value, 'name', key);
-	    }
-	    state = enforceInternalState(value);
-	    if (!state.source) {
-	      state.source = TEMPLATE.join(typeof key == 'string' ? key : '');
-	    }
+	    if (typeof key == 'string' && !has(value, 'name')) createNonEnumerableProperty(value, 'name', key);
+	    enforceInternalState(value).source = TEMPLATE.join(typeof key == 'string' ? key : '');
 	  }
 	  if (O === global_1) {
 	    if (simple) O[key] = value;
@@ -614,14 +606,13 @@ typeof navigator === "object" && (function () {
 
 	var push = [].push;
 
-	// `Array.prototype.{ forEach, map, filter, some, every, find, findIndex, filterOut }` methods implementation
+	// `Array.prototype.{ forEach, map, filter, some, every, find, findIndex }` methods implementation
 	var createMethod$1 = function (TYPE) {
 	  var IS_MAP = TYPE == 1;
 	  var IS_FILTER = TYPE == 2;
 	  var IS_SOME = TYPE == 3;
 	  var IS_EVERY = TYPE == 4;
 	  var IS_FIND_INDEX = TYPE == 6;
-	  var IS_FILTER_OUT = TYPE == 7;
 	  var NO_HOLES = TYPE == 5 || IS_FIND_INDEX;
 	  return function ($this, callbackfn, that, specificCreate) {
 	    var O = toObject($this);
@@ -630,7 +621,7 @@ typeof navigator === "object" && (function () {
 	    var length = toLength(self.length);
 	    var index = 0;
 	    var create = specificCreate || arraySpeciesCreate;
-	    var target = IS_MAP ? create($this, length) : IS_FILTER || IS_FILTER_OUT ? create($this, 0) : undefined;
+	    var target = IS_MAP ? create($this, length) : IS_FILTER ? create($this, 0) : undefined;
 	    var value, result;
 	    for (;length > index; index++) if (NO_HOLES || index in self) {
 	      value = self[index];
@@ -642,10 +633,7 @@ typeof navigator === "object" && (function () {
 	          case 5: return value;             // find
 	          case 6: return index;             // findIndex
 	          case 2: push.call(target, value); // filter
-	        } else switch (TYPE) {
-	          case 4: return false;             // every
-	          case 7: push.call(target, value); // filterOut
-	        }
+	        } else if (IS_EVERY) return false;  // every
 	      }
 	    }
 	    return IS_FIND_INDEX ? -1 : IS_SOME || IS_EVERY ? IS_EVERY : target;
@@ -673,10 +661,7 @@ typeof navigator === "object" && (function () {
 	  find: createMethod$1(5),
 	  // `Array.prototype.findIndex` method
 	  // https://tc39.github.io/ecma262/#sec-array.prototype.findIndex
-	  findIndex: createMethod$1(6),
-	  // `Array.prototype.filterOut` method
-	  // https://github.com/tc39/proposal-array-filtering
-	  filterOut: createMethod$1(7)
+	  findIndex: createMethod$1(6)
 	};
 
 	var arrayMethodIsStrict = function (METHOD_NAME, argument) {
@@ -730,20 +715,14 @@ typeof navigator === "object" && (function () {
 	  forEach: arrayForEach
 	});
 
-	var iteratorClose = function (iterator) {
-	  var returnMethod = iterator['return'];
-	  if (returnMethod !== undefined) {
-	    return anObject(returnMethod.call(iterator)).value;
-	  }
-	};
-
 	// call something on iterator step with safe closing on error
 	var callWithSafeIterationClosing = function (iterator, fn, value, ENTRIES) {
 	  try {
 	    return ENTRIES ? fn(anObject(value)[0], value[1]) : fn(value);
 	  // 7.4.6 IteratorClose(iterator, completion)
 	  } catch (error) {
-	    iteratorClose(iterator);
+	    var returnMethod = iterator['return'];
+	    if (returnMethod !== undefined) anObject(returnMethod.call(iterator));
 	    throw error;
 	  }
 	};
@@ -1038,11 +1017,11 @@ typeof navigator === "object" && (function () {
 	  var regexp = /./;
 	  try {
 	    '/./'[METHOD_NAME](regexp);
-	  } catch (error1) {
+	  } catch (e) {
 	    try {
 	      regexp[MATCH$1] = false;
 	      return '/./'[METHOD_NAME](regexp);
-	    } catch (error2) { /* empty */ }
+	    } catch (f) { /* empty */ }
 	  } return false;
 	};
 
@@ -2996,7 +2975,7 @@ typeof navigator === "object" && (function () {
 	var URLSearchParamsPrototype = URLSearchParamsConstructor.prototype;
 
 	redefineAll(URLSearchParamsPrototype, {
-	  // `URLSearchParams.prototype.append` method
+	  // `URLSearchParams.prototype.appent` method
 	  // https://url.spec.whatwg.org/#dom-urlsearchparams-append
 	  append: function append(name, value) {
 	    validateArgumentsLength(arguments.length, 2);
@@ -4621,14 +4600,12 @@ typeof navigator === "object" && (function () {
 	    var _URL = global.URL;
 
 	    var URL = function URL(url, base) {
-	      if (typeof url !== 'string') url = String(url);
-	      if (base && typeof base !== 'string') base = String(base); // Only create another document if the base is different from current location.
+	      if (typeof url !== 'string') url = String(url); // Only create another document if the base is different from current location.
 
 	      var doc = document,
 	          baseElement;
 
 	      if (base && (global.location === void 0 || base !== global.location.href)) {
-	        base = base.toLowerCase();
 	        doc = document.implementation.createHTMLDocument('');
 	        baseElement = doc.createElement('base');
 	        baseElement.href = base;
@@ -5764,7 +5741,7 @@ typeof navigator === "object" && (function () {
 	// https://tc39.github.io/ecma262/#sec-array.prototype-@@unscopables
 	addToUnscopables$1(FIND);
 
-	var iteratorClose$1 = function (iterator) {
+	var iteratorClose = function (iterator) {
 	  var returnMethod = iterator['return'];
 	  if (returnMethod !== undefined) {
 	    return anObject$1(returnMethod.call(iterator)).value;
@@ -5777,7 +5754,7 @@ typeof navigator === "object" && (function () {
 	    return ENTRIES ? fn(anObject$1(value)[0], value[1]) : fn(value);
 	  // 7.4.6 IteratorClose(iterator, completion)
 	  } catch (error) {
-	    iteratorClose$1(iterator);
+	    iteratorClose(iterator);
 	    throw error;
 	  }
 	};
@@ -6874,7 +6851,7 @@ typeof navigator === "object" && (function () {
 	  var iterator, iterFn, index, length, result, next, step;
 
 	  var stop = function (condition) {
-	    if (iterator) iteratorClose$1(iterator);
+	    if (iterator) iteratorClose(iterator);
 	    return new Result(true, condition);
 	  };
 
@@ -6905,7 +6882,7 @@ typeof navigator === "object" && (function () {
 	    try {
 	      result = callFn(step.value);
 	    } catch (error) {
-	      iteratorClose$1(iterator);
+	      iteratorClose(iterator);
 	      throw error;
 	    }
 	    if (typeof result == 'object' && result && result instanceof Result) return result;
@@ -7257,483 +7234,6 @@ typeof navigator === "object" && (function () {
 	  }
 	}
 
-	// ==========================================================================
-	// Plyr Captions
-	// TODO: Create as class
-	// ==========================================================================
-	var captions = {
-	  setup: function setup() {
-	    return undefined;
-	  },
-	  update: function update() {
-	    throw new Error('captions#update is removed!');
-	  },
-	  toggle: function toggle() {
-	    throw new Error('captions#toggle is removed!');
-	  },
-	  set: function set() {
-	    throw new Error('captions#set is removed!');
-	  },
-	  setLanguage: function setLanguage() {
-	    throw new Error('captions#setLanguage is removed!');
-	  },
-	  getTracks: function getTracks() {
-	    throw new Error('captions#getTracks is removed!');
-	  },
-	  findTrack: function findTrack() {
-	    throw new Error('captions#findTrack is removed!');
-	  },
-	  getCurrentTrack: function getCurrentTrack() {
-	    throw new Error('captions#getCurrentTrack is removed!');
-	  },
-	  getLabel: function getLabel() {
-	    return i18n.get('disabled', this.config);
-	  },
-	  updateCues: function updateCues() {
-	    throw new Error('captions#updateCues is removed!');
-	  }
-	};
-
-	// ==========================================================================
-	// Plyr default config
-	// ==========================================================================
-	var defaults = {
-	  // Disable
-	  enabled: true,
-	  // Custom media title
-	  title: '',
-	  // Logging to console
-	  debug: false,
-	  // Auto play (if supported)
-	  autoplay: false,
-	  // Only allow one media playing at once (vimeo only)
-	  autopause: true,
-	  // Allow inline playback on iOS (this effects YouTube/Vimeo - HTML5 requires the attribute present)
-	  // TODO: Remove iosNative fullscreen option in favour of this (logic needs work)
-	  playsinline: true,
-	  // Default time to skip when rewind/fast forward
-	  seekTime: 10,
-	  // Default volume
-	  volume: 1,
-	  muted: false,
-	  // Pass a custom duration
-	  duration: null,
-	  // Display the media duration on load in the current time position
-	  // If you have opted to display both duration and currentTime, this is ignored
-	  displayDuration: true,
-	  // Invert the current time to be a countdown
-	  invertTime: true,
-	  // Clicking the currentTime inverts it's value to show time left rather than elapsed
-	  toggleInvert: true,
-	  // Force an aspect ratio
-	  // The format must be `'w:h'` (e.g. `'16:9'`)
-	  ratio: null,
-	  // Click video container to play/pause
-	  clickToPlay: true,
-	  // Auto hide the controls
-	  hideControls: true,
-	  // Reset to start when playback ended
-	  resetOnEnd: false,
-	  // Disable the standard context menu
-	  disableContextMenu: true,
-	  // Sprite (for icons)
-	  loadSprite: true,
-	  iconPrefix: 'plyr',
-	  iconUrl: 'https://cdn.plyr.io/3.6.3/plyr.svg',
-	  // Blank video (used to prevent errors on source change)
-	  blankVideo: 'https://cdn.plyr.io/static/blank.mp4',
-	  // Quality default
-	  quality: {
-	    default: 576,
-	    // The options to display in the UI, if available for the source media
-	    options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240],
-	    forced: false,
-	    onChange: null
-	  },
-	  // Set loops
-	  loop: {
-	    active: false // start: null,
-	    // end: null,
-
-	  },
-	  // Speed default and options to display
-	  speed: {
-	    selected: 1,
-	    // The options to display in the UI, if available for the source media (e.g. Vimeo and YouTube only support 0.5x-4x)
-	    options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 4]
-	  },
-	  // Keyboard shortcut settings
-	  keyboard: {
-	    focused: true,
-	    global: false
-	  },
-	  // Display tooltips
-	  tooltips: {
-	    controls: false,
-	    seek: true
-	  },
-	  // Captions settings
-	  captions: {
-	    active: false,
-	    language: 'auto',
-	    // Listen to new tracks added after Plyr is initialized.
-	    // This is needed for streaming captions, but may result in unselectable options
-	    update: false
-	  },
-	  // Fullscreen settings
-	  fullscreen: {
-	    enabled: true,
-	    // Allow fullscreen?
-	    fallback: true,
-	    // Fallback using full viewport/window
-	    iosNative: false,
-	    // Use the native fullscreen in iOS (disables custom controls)
-	    dblclick: true // Toggle fullscreen on double click
-	    // Selector for the fullscreen container so contextual / non-player content can remain visible in fullscreen mode
-	    // Non-ancestors of the player element will be ignored
-	    // container: null, // defaults to the player element
-
-	  },
-	  // Local storage
-	  storage: {
-	    enabled: true,
-	    key: 'ggs-plyr'
-	  },
-	  // Default controls
-	  controls: ['play-large', // 'restart',
-	  // 'rewind',
-	  'play', // 'fast-forward',
-	  'progress', 'current-time', // 'duration',
-	  'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', // 'download',
-	  'fullscreen'],
-	  settings: ['captions', 'quality', 'speed'],
-	  // Localisation
-	  i18n: {
-	    restart: 'Restart',
-	    rewind: 'Rewind {seektime}s',
-	    play: 'Play',
-	    pause: 'Pause',
-	    fastForward: 'Forward {seektime}s',
-	    seek: 'Seek',
-	    seekLabel: '{currentTime} of {duration}',
-	    played: 'Played',
-	    buffered: 'Buffered',
-	    currentTime: 'Current time',
-	    duration: 'Duration',
-	    volume: 'Volume',
-	    mute: 'Mute',
-	    unmute: 'Unmute',
-	    enableCaptions: 'Enable captions',
-	    disableCaptions: 'Disable captions',
-	    download: 'Download',
-	    enterFullscreen: 'Enter fullscreen',
-	    exitFullscreen: 'Exit fullscreen',
-	    frameTitle: 'Player for {title}',
-	    captions: 'Captions',
-	    settings: 'Settings',
-	    pip: 'PIP',
-	    menuBack: 'Go back to previous menu',
-	    speed: 'Speed',
-	    normal: 'Normal',
-	    quality: 'Quality',
-	    loop: 'Loop',
-	    start: 'Start',
-	    end: 'End',
-	    all: 'All',
-	    reset: 'Reset',
-	    disabled: 'Disabled',
-	    enabled: 'Enabled',
-	    advertisement: 'Ad',
-	    qualityBadge: {
-	      2160: '4K',
-	      1440: 'HD',
-	      1080: 'HD',
-	      720: 'HD',
-	      576: 'SD',
-	      480: 'SD'
-	    }
-	  },
-	  // URLs
-	  urls: {
-	    download: null,
-	    vimeo: {
-	      sdk: 'https://player.vimeo.com/api/player.js',
-	      iframe: 'https://player.vimeo.com/video/{0}?{1}',
-	      api: 'https://vimeo.com/api/oembed.json?url={0}'
-	    },
-	    youtube: {
-	      sdk: 'https://www.youtube.com/iframe_api',
-	      api: 'https://noembed.com/embed?url=https://www.youtube.com/watch?v={0}'
-	    },
-	    googleIMA: {
-	      sdk: 'https://imasdk.googleapis.com/js/sdkloader/ima3.js'
-	    }
-	  },
-	  // Custom control listeners
-	  listeners: {
-	    seek: null,
-	    play: null,
-	    pause: null,
-	    restart: null,
-	    rewind: null,
-	    fastForward: null,
-	    mute: null,
-	    volume: null,
-	    captions: null,
-	    download: null,
-	    fullscreen: null,
-	    pip: null,
-	    airplay: null,
-	    speed: null,
-	    quality: null,
-	    loop: null,
-	    language: null
-	  },
-	  // Events to watch and bubble
-	  events: [// Events to watch on HTML5 media elements and bubble
-	  // https://developer.mozilla.org/en/docs/Web/Guide/Events/Media_events
-	  'ended', 'progress', 'stalled', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadstart', 'loadeddata', 'loadedmetadata', 'timeupdate', 'volumechange', 'play', 'pause', 'error', 'seeking', 'seeked', 'emptied', 'ratechange', 'cuechange', // Custom events
-	  'download', 'enterfullscreen', 'exitfullscreen', 'captionsenabled', 'captionsdisabled', 'languagechange', 'controlshidden', 'controlsshown', 'ready', // YouTube
-	  'statechange', // Quality
-	  'qualitychange', // Ads
-	  'adsloaded', 'adscontentpause', 'adscontentresume', 'adstarted', 'adsmidpoint', 'adscomplete', 'adsallcomplete', 'adsimpression', 'adsclick'],
-	  // Selectors
-	  // Change these to match your template if using custom HTML
-	  selectors: {
-	    editable: 'input, textarea, select, [contenteditable]',
-	    container: '.ggs-plyr',
-	    controls: {
-	      container: null,
-	      wrapper: '.ggs-plyr__controls'
-	    },
-	    labels: '[data-plyr]',
-	    buttons: {
-	      play: '[data-plyr="play"]',
-	      pause: '[data-plyr="pause"]',
-	      restart: '[data-plyr="restart"]',
-	      rewind: '[data-plyr="rewind"]',
-	      fastForward: '[data-plyr="fast-forward"]',
-	      mute: '[data-plyr="mute"]',
-	      captions: '[data-plyr="captions"]',
-	      download: '[data-plyr="download"]',
-	      fullscreen: '[data-plyr="fullscreen"]',
-	      pip: '[data-plyr="pip"]',
-	      airplay: '[data-plyr="airplay"]',
-	      settings: '[data-plyr="settings"]',
-	      loop: '[data-plyr="loop"]'
-	    },
-	    inputs: {
-	      seek: '[data-plyr="seek"]',
-	      volume: '[data-plyr="volume"]',
-	      speed: '[data-plyr="speed"]',
-	      language: '[data-plyr="language"]',
-	      quality: '[data-plyr="quality"]'
-	    },
-	    display: {
-	      currentTime: '.ggs-plyr__time--current',
-	      duration: '.ggs-plyr__time--duration',
-	      buffer: '.ggs-plyr__progress__buffer',
-	      loop: '.ggs-plyr__progress__loop',
-	      // Used later
-	      volume: '.ggs-plyr__volume--display'
-	    },
-	    progress: '.ggs-plyr__progress',
-	    captions: '.ggs-plyr__captions',
-	    caption: '.ggs-plyr__caption'
-	  },
-	  // Class hooks added to the player in different states
-	  classNames: {
-	    type: 'ggs-plyr--{0}',
-	    provider: 'ggs-plyr--{0}',
-	    video: 'ggs-plyr__video-wrapper',
-	    embed: 'ggs-plyr__video-embed',
-	    videoFixedRatio: 'ggs-plyr__video-wrapper--fixed-ratio',
-	    embedContainer: 'ggs-plyr__video-embed__container',
-	    poster: 'ggs-plyr__poster',
-	    posterEnabled: 'ggs-plyr__poster-enabled',
-	    ads: 'ggs-plyr__ads',
-	    control: 'ggs-plyr__control',
-	    controlPressed: 'ggs-plyr__control--pressed',
-	    playing: 'ggs-plyr--playing',
-	    paused: 'ggs-plyr--paused',
-	    stopped: 'ggs-plyr--stopped',
-	    loading: 'ggs-plyr--loading',
-	    hover: 'ggs-plyr--hover',
-	    tooltip: 'ggs-plyr__tooltip',
-	    cues: 'ggs-plyr__cues',
-	    hidden: 'ggs-plyr__sr-only',
-	    hideControls: 'ggs-plyr--hide-controls',
-	    isIos: 'ggs-plyr--is-ios',
-	    isTouch: 'ggs-plyr--is-touch',
-	    uiSupported: 'ggs-plyr--full-ui',
-	    noTransition: 'ggs-plyr--no-transition',
-	    display: {
-	      time: 'ggs-plyr__time'
-	    },
-	    menu: {
-	      value: 'ggs-plyr__menu__value',
-	      badge: 'ggs-plyr__badge',
-	      open: 'ggs-plyr--menu-open'
-	    },
-	    captions: {
-	      enabled: 'ggs-plyr--captions-enabled',
-	      active: 'ggs-plyr--captions-active'
-	    },
-	    fullscreen: {
-	      enabled: 'ggs-plyr--fullscreen-enabled',
-	      fallback: 'ggs-plyr--fullscreen-fallback'
-	    },
-	    pip: {
-	      supported: 'ggs-plyr--pip-supported',
-	      active: 'ggs-plyr--pip-active'
-	    },
-	    airplay: {
-	      supported: 'ggs-plyr--airplay-supported',
-	      active: 'ggs-plyr--airplay-active'
-	    },
-	    tabFocus: 'ggs-plyr__tab-focus',
-	    previewThumbnails: {
-	      // Tooltip thumbs
-	      thumbContainer: 'ggs-plyr__preview-thumb',
-	      thumbContainerShown: 'ggs-plyr__preview-thumb--is-shown',
-	      imageContainer: 'ggs-plyr__preview-thumb__image-container',
-	      timeContainer: 'ggs-plyr__preview-thumb__time-container',
-	      // Scrubbing
-	      scrubbingContainer: 'ggs-plyr__preview-scrubbing',
-	      scrubbingContainerShown: 'ggs-plyr__preview-scrubbing--is-shown'
-	    }
-	  },
-	  // Embed attributes
-	  attributes: {
-	    embed: {
-	      provider: 'data-plyr-provider',
-	      id: 'data-plyr-embed-id'
-	    }
-	  },
-	  // Advertisements plugin
-	  // Register for an account here: http://vi.ai/publisher-video-monetization/?aid=plyrio
-	  ads: {
-	    enabled: false,
-	    publisherId: '',
-	    tagUrl: ''
-	  },
-	  // Preview Thumbnails plugin
-	  previewThumbnails: {
-	    enabled: false,
-	    src: ''
-	  },
-	  // Vimeo plugin
-	  vimeo: {
-	    byline: false,
-	    portrait: false,
-	    title: false,
-	    speed: true,
-	    transparent: false,
-	    // Custom settings from Plyr
-	    customControls: true,
-	    referrerPolicy: null,
-	    // https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement/referrerPolicy
-	    // Whether the owner of the video has a Pro or Business account
-	    // (which allows us to properly hide controls without CSS hacks, etc)
-	    premium: false
-	  },
-	  // YouTube plugin
-	  youtube: {
-	    rel: 0,
-	    // No related vids
-	    showinfo: 0,
-	    // Hide info
-	    iv_load_policy: 3,
-	    // Hide annotations
-	    modestbranding: 1,
-	    // Hide logos as much as possible (they still show one in the corner when paused)
-	    // Custom settings from Plyr
-	    customControls: true,
-	    noCookie: false // Whether to use an alternative version of YouTube without cookies
-
-	  }
-	};
-
-	// ==========================================================================
-	// Plyr states
-	// ==========================================================================
-	var pip = {
-	  active: 'picture-in-picture',
-	  inactive: 'inline'
-	};
-
-	// ==========================================================================
-	// Plyr supported types and providers
-	// ==========================================================================
-	var providers = {
-	  html5: 'html5',
-	  youtube: 'youtube',
-	  vimeo: 'vimeo'
-	};
-	var types = {
-	  audio: 'audio',
-	  video: 'video'
-	};
-	/**
-	 * Get provider by URL
-	 * @param {String} url
-	 */
-
-	function getProviderByUrl(url) {
-	  // YouTube
-	  if (/^(https?:\/\/)?(www\.)?(youtube\.com|youtube-nocookie\.com|youtu\.?be)\/.+$/.test(url)) {
-	    return providers.youtube;
-	  } // Vimeo
-
-
-	  if (/^https?:\/\/player.vimeo.com\/video\/\d{0,9}(?=\b|\/)/.test(url)) {
-	    return providers.vimeo;
-	  }
-
-	  return null;
-	}
-
-	// ==========================================================================
-	// Console wrapper
-	// ==========================================================================
-	var noop = function noop() {};
-
-	var Console = /*#__PURE__*/function () {
-	  function Console() {
-	    var enabled = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-
-	    _classCallCheck(this, Console);
-
-	    this.enabled = window.console && enabled;
-
-	    if (this.enabled) {
-	      this.log('Debugging enabled');
-	    }
-	  }
-
-	  _createClass(Console, [{
-	    key: "log",
-	    get: function get() {
-	      // eslint-disable-next-line no-console
-	      return this.enabled ? Function.prototype.bind.call(console.log, console) : noop;
-	    }
-	  }, {
-	    key: "warn",
-	    get: function get() {
-	      // eslint-disable-next-line no-console
-	      return this.enabled ? Function.prototype.bind.call(console.warn, console) : noop;
-	    }
-	  }, {
-	    key: "error",
-	    get: function get() {
-	      // eslint-disable-next-line no-console
-	      return this.enabled ? Function.prototype.bind.call(console.error, console) : noop;
-	    }
-	  }]);
-
-	  return Console;
-	}();
-
 	var $forEach$2 = arrayIteration$1.forEach;
 
 
@@ -7751,182 +7251,6 @@ typeof navigator === "object" && (function () {
 	// https://tc39.github.io/ecma262/#sec-array.prototype.foreach
 	_export$1({ target: 'Array', proto: true, forced: [].forEach != arrayForEach$1 }, {
 	  forEach: arrayForEach$1
-	});
-
-	var $indexOf$1 = arrayIncludes$1.indexOf;
-
-
-
-	var nativeIndexOf$1 = [].indexOf;
-
-	var NEGATIVE_ZERO$1 = !!nativeIndexOf$1 && 1 / [1].indexOf(1, -0) < 0;
-	var STRICT_METHOD$5 = arrayMethodIsStrict$1('indexOf');
-	var USES_TO_LENGTH$9 = arrayMethodUsesToLength$1('indexOf', { ACCESSORS: true, 1: 0 });
-
-	// `Array.prototype.indexOf` method
-	// https://tc39.github.io/ecma262/#sec-array.prototype.indexof
-	_export$1({ target: 'Array', proto: true, forced: NEGATIVE_ZERO$1 || !STRICT_METHOD$5 || !USES_TO_LENGTH$9 }, {
-	  indexOf: function indexOf(searchElement /* , fromIndex = 0 */) {
-	    return NEGATIVE_ZERO$1
-	      // convert -0 to +0
-	      ? nativeIndexOf$1.apply(this, arguments) || 0
-	      : $indexOf$1(this, searchElement, arguments.length > 1 ? arguments[1] : undefined);
-	  }
-	});
-
-	var $some = arrayIteration$1.some;
-
-
-
-	var STRICT_METHOD$6 = arrayMethodIsStrict$1('some');
-	var USES_TO_LENGTH$a = arrayMethodUsesToLength$1('some');
-
-	// `Array.prototype.some` method
-	// https://tc39.github.io/ecma262/#sec-array.prototype.some
-	_export$1({ target: 'Array', proto: true, forced: !STRICT_METHOD$6 || !USES_TO_LENGTH$a }, {
-	  some: function some(callbackfn /* , thisArg */) {
-	    return $some(this, callbackfn, arguments.length > 1 ? arguments[1] : undefined);
-	  }
-	});
-
-	// `thisNumberValue` abstract operation
-	// https://tc39.github.io/ecma262/#sec-thisnumbervalue
-	var thisNumberValue = function (value) {
-	  if (typeof value != 'number' && classofRaw$1(value) != 'Number') {
-	    throw TypeError('Incorrect invocation');
-	  }
-	  return +value;
-	};
-
-	// `String.prototype.repeat` method implementation
-	// https://tc39.github.io/ecma262/#sec-string.prototype.repeat
-	var stringRepeat = ''.repeat || function repeat(count) {
-	  var str = String(requireObjectCoercible$1(this));
-	  var result = '';
-	  var n = toInteger$1(count);
-	  if (n < 0 || n == Infinity) throw RangeError('Wrong number of repetitions');
-	  for (;n > 0; (n >>>= 1) && (str += str)) if (n & 1) result += str;
-	  return result;
-	};
-
-	var nativeToFixed = 1.0.toFixed;
-	var floor$5 = Math.floor;
-
-	var pow$1 = function (x, n, acc) {
-	  return n === 0 ? acc : n % 2 === 1 ? pow$1(x, n - 1, acc * x) : pow$1(x * x, n / 2, acc);
-	};
-
-	var log = function (x) {
-	  var n = 0;
-	  var x2 = x;
-	  while (x2 >= 4096) {
-	    n += 12;
-	    x2 /= 4096;
-	  }
-	  while (x2 >= 2) {
-	    n += 1;
-	    x2 /= 2;
-	  } return n;
-	};
-
-	var FORCED$1 = nativeToFixed && (
-	  0.00008.toFixed(3) !== '0.000' ||
-	  0.9.toFixed(0) !== '1' ||
-	  1.255.toFixed(2) !== '1.25' ||
-	  1000000000000000128.0.toFixed(0) !== '1000000000000000128'
-	) || !fails$1(function () {
-	  // V8 ~ Android 4.3-
-	  nativeToFixed.call({});
-	});
-
-	// `Number.prototype.toFixed` method
-	// https://tc39.github.io/ecma262/#sec-number.prototype.tofixed
-	_export$1({ target: 'Number', proto: true, forced: FORCED$1 }, {
-	  // eslint-disable-next-line max-statements
-	  toFixed: function toFixed(fractionDigits) {
-	    var number = thisNumberValue(this);
-	    var fractDigits = toInteger$1(fractionDigits);
-	    var data = [0, 0, 0, 0, 0, 0];
-	    var sign = '';
-	    var result = '0';
-	    var e, z, j, k;
-
-	    var multiply = function (n, c) {
-	      var index = -1;
-	      var c2 = c;
-	      while (++index < 6) {
-	        c2 += n * data[index];
-	        data[index] = c2 % 1e7;
-	        c2 = floor$5(c2 / 1e7);
-	      }
-	    };
-
-	    var divide = function (n) {
-	      var index = 6;
-	      var c = 0;
-	      while (--index >= 0) {
-	        c += data[index];
-	        data[index] = floor$5(c / n);
-	        c = (c % n) * 1e7;
-	      }
-	    };
-
-	    var dataToString = function () {
-	      var index = 6;
-	      var s = '';
-	      while (--index >= 0) {
-	        if (s !== '' || index === 0 || data[index] !== 0) {
-	          var t = String(data[index]);
-	          s = s === '' ? t : s + stringRepeat.call('0', 7 - t.length) + t;
-	        }
-	      } return s;
-	    };
-
-	    if (fractDigits < 0 || fractDigits > 20) throw RangeError('Incorrect fraction digits');
-	    // eslint-disable-next-line no-self-compare
-	    if (number != number) return 'NaN';
-	    if (number <= -1e21 || number >= 1e21) return String(number);
-	    if (number < 0) {
-	      sign = '-';
-	      number = -number;
-	    }
-	    if (number > 1e-21) {
-	      e = log(number * pow$1(2, 69, 1)) - 69;
-	      z = e < 0 ? number * pow$1(2, -e, 1) : number / pow$1(2, e, 1);
-	      z *= 0x10000000000000;
-	      e = 52 - e;
-	      if (e > 0) {
-	        multiply(0, z);
-	        j = fractDigits;
-	        while (j >= 7) {
-	          multiply(1e7, 0);
-	          j -= 7;
-	        }
-	        multiply(pow$1(10, j, 1), 0);
-	        j = e - 1;
-	        while (j >= 23) {
-	          divide(1 << 23);
-	          j -= 23;
-	        }
-	        divide(1 << j);
-	        multiply(1, 1);
-	        divide(2);
-	        result = dataToString();
-	      } else {
-	        multiply(0, z);
-	        multiply(1 << -e, 0);
-	        result = dataToString() + stringRepeat.call('0', fractDigits);
-	      }
-	    }
-	    if (fractDigits > 0) {
-	      k = result.length;
-	      result = sign + (k <= fractDigits
-	        ? '0.' + stringRepeat.call('0', fractDigits - k) + result
-	        : result.slice(0, k - fractDigits) + '.' + result.slice(k - fractDigits));
-	    } else {
-	      result = sign + result;
-	    } return result;
-	  }
 	});
 
 	var propertyIsEnumerable = objectPropertyIsEnumerable$1.f;
@@ -7969,304 +7293,6 @@ typeof navigator === "object" && (function () {
 	  }
 	});
 
-	var $values = objectToArray.values;
-
-	// `Object.values` method
-	// https://tc39.github.io/ecma262/#sec-object.values
-	_export$1({ target: 'Object', stat: true }, {
-	  values: function values(O) {
-	    return $values(O);
-	  }
-	});
-
-	var charAt$3 = stringMultibyte$1.charAt;
-
-	// `AdvanceStringIndex` abstract operation
-	// https://tc39.github.io/ecma262/#sec-advancestringindex
-	var advanceStringIndex$1 = function (S, index, unicode) {
-	  return index + (unicode ? charAt$3(S, index).length : 1);
-	};
-
-	var max$4 = Math.max;
-	var min$6 = Math.min;
-	var floor$6 = Math.floor;
-	var SUBSTITUTION_SYMBOLS$1 = /\$([$&'`]|\d\d?|<[^>]*>)/g;
-	var SUBSTITUTION_SYMBOLS_NO_NAMED$1 = /\$([$&'`]|\d\d?)/g;
-
-	var maybeToString$1 = function (it) {
-	  return it === undefined ? it : String(it);
-	};
-
-	// @@replace logic
-	fixRegexpWellKnownSymbolLogic$1('replace', 2, function (REPLACE, nativeReplace, maybeCallNative, reason) {
-	  var REGEXP_REPLACE_SUBSTITUTES_UNDEFINED_CAPTURE = reason.REGEXP_REPLACE_SUBSTITUTES_UNDEFINED_CAPTURE;
-	  var REPLACE_KEEPS_$0 = reason.REPLACE_KEEPS_$0;
-	  var UNSAFE_SUBSTITUTE = REGEXP_REPLACE_SUBSTITUTES_UNDEFINED_CAPTURE ? '$' : '$0';
-
-	  return [
-	    // `String.prototype.replace` method
-	    // https://tc39.github.io/ecma262/#sec-string.prototype.replace
-	    function replace(searchValue, replaceValue) {
-	      var O = requireObjectCoercible$1(this);
-	      var replacer = searchValue == undefined ? undefined : searchValue[REPLACE];
-	      return replacer !== undefined
-	        ? replacer.call(searchValue, O, replaceValue)
-	        : nativeReplace.call(String(O), searchValue, replaceValue);
-	    },
-	    // `RegExp.prototype[@@replace]` method
-	    // https://tc39.github.io/ecma262/#sec-regexp.prototype-@@replace
-	    function (regexp, replaceValue) {
-	      if (
-	        (!REGEXP_REPLACE_SUBSTITUTES_UNDEFINED_CAPTURE && REPLACE_KEEPS_$0) ||
-	        (typeof replaceValue === 'string' && replaceValue.indexOf(UNSAFE_SUBSTITUTE) === -1)
-	      ) {
-	        var res = maybeCallNative(nativeReplace, regexp, this, replaceValue);
-	        if (res.done) return res.value;
-	      }
-
-	      var rx = anObject$1(regexp);
-	      var S = String(this);
-
-	      var functionalReplace = typeof replaceValue === 'function';
-	      if (!functionalReplace) replaceValue = String(replaceValue);
-
-	      var global = rx.global;
-	      if (global) {
-	        var fullUnicode = rx.unicode;
-	        rx.lastIndex = 0;
-	      }
-	      var results = [];
-	      while (true) {
-	        var result = regexpExecAbstract$1(rx, S);
-	        if (result === null) break;
-
-	        results.push(result);
-	        if (!global) break;
-
-	        var matchStr = String(result[0]);
-	        if (matchStr === '') rx.lastIndex = advanceStringIndex$1(S, toLength$1(rx.lastIndex), fullUnicode);
-	      }
-
-	      var accumulatedResult = '';
-	      var nextSourcePosition = 0;
-	      for (var i = 0; i < results.length; i++) {
-	        result = results[i];
-
-	        var matched = String(result[0]);
-	        var position = max$4(min$6(toInteger$1(result.index), S.length), 0);
-	        var captures = [];
-	        // NOTE: This is equivalent to
-	        //   captures = result.slice(1).map(maybeToString)
-	        // but for some reason `nativeSlice.call(result, 1, result.length)` (called in
-	        // the slice polyfill when slicing native arrays) "doesn't work" in safari 9 and
-	        // causes a crash (https://pastebin.com/N21QzeQA) when trying to debug it.
-	        for (var j = 1; j < result.length; j++) captures.push(maybeToString$1(result[j]));
-	        var namedCaptures = result.groups;
-	        if (functionalReplace) {
-	          var replacerArgs = [matched].concat(captures, position, S);
-	          if (namedCaptures !== undefined) replacerArgs.push(namedCaptures);
-	          var replacement = String(replaceValue.apply(undefined, replacerArgs));
-	        } else {
-	          replacement = getSubstitution(matched, S, position, captures, namedCaptures, replaceValue);
-	        }
-	        if (position >= nextSourcePosition) {
-	          accumulatedResult += S.slice(nextSourcePosition, position) + replacement;
-	          nextSourcePosition = position + matched.length;
-	        }
-	      }
-	      return accumulatedResult + S.slice(nextSourcePosition);
-	    }
-	  ];
-
-	  // https://tc39.github.io/ecma262/#sec-getsubstitution
-	  function getSubstitution(matched, str, position, captures, namedCaptures, replacement) {
-	    var tailPos = position + matched.length;
-	    var m = captures.length;
-	    var symbols = SUBSTITUTION_SYMBOLS_NO_NAMED$1;
-	    if (namedCaptures !== undefined) {
-	      namedCaptures = toObject$1(namedCaptures);
-	      symbols = SUBSTITUTION_SYMBOLS$1;
-	    }
-	    return nativeReplace.call(replacement, symbols, function (match, ch) {
-	      var capture;
-	      switch (ch.charAt(0)) {
-	        case '$': return '$';
-	        case '&': return matched;
-	        case '`': return str.slice(0, position);
-	        case "'": return str.slice(tailPos);
-	        case '<':
-	          capture = namedCaptures[ch.slice(1, -1)];
-	          break;
-	        default: // \d\d?
-	          var n = +ch;
-	          if (n === 0) return match;
-	          if (n > m) {
-	            var f = floor$6(n / 10);
-	            if (f === 0) return match;
-	            if (f <= m) return captures[f - 1] === undefined ? ch.charAt(1) : captures[f - 1] + ch.charAt(1);
-	            return match;
-	          }
-	          capture = captures[n - 1];
-	      }
-	      return capture === undefined ? '' : capture;
-	    });
-	  }
-	});
-
-	var SPECIES$8 = wellKnownSymbol$1('species');
-
-	// `SpeciesConstructor` abstract operation
-	// https://tc39.github.io/ecma262/#sec-speciesconstructor
-	var speciesConstructor$1 = function (O, defaultConstructor) {
-	  var C = anObject$1(O).constructor;
-	  var S;
-	  return C === undefined || (S = anObject$1(C)[SPECIES$8]) == undefined ? defaultConstructor : aFunction$3(S);
-	};
-
-	var arrayPush$1 = [].push;
-	var min$7 = Math.min;
-	var MAX_UINT32$1 = 0xFFFFFFFF;
-
-	// babel-minify transpiles RegExp('x', 'y') -> /x/y and it causes SyntaxError
-	var SUPPORTS_Y$1 = !fails$1(function () { return !RegExp(MAX_UINT32$1, 'y'); });
-
-	// @@split logic
-	fixRegexpWellKnownSymbolLogic$1('split', 2, function (SPLIT, nativeSplit, maybeCallNative) {
-	  var internalSplit;
-	  if (
-	    'abbc'.split(/(b)*/)[1] == 'c' ||
-	    'test'.split(/(?:)/, -1).length != 4 ||
-	    'ab'.split(/(?:ab)*/).length != 2 ||
-	    '.'.split(/(.?)(.?)/).length != 4 ||
-	    '.'.split(/()()/).length > 1 ||
-	    ''.split(/.?/).length
-	  ) {
-	    // based on es5-shim implementation, need to rework it
-	    internalSplit = function (separator, limit) {
-	      var string = String(requireObjectCoercible$1(this));
-	      var lim = limit === undefined ? MAX_UINT32$1 : limit >>> 0;
-	      if (lim === 0) return [];
-	      if (separator === undefined) return [string];
-	      // If `separator` is not a regex, use native split
-	      if (!isRegexp$1(separator)) {
-	        return nativeSplit.call(string, separator, lim);
-	      }
-	      var output = [];
-	      var flags = (separator.ignoreCase ? 'i' : '') +
-	                  (separator.multiline ? 'm' : '') +
-	                  (separator.unicode ? 'u' : '') +
-	                  (separator.sticky ? 'y' : '');
-	      var lastLastIndex = 0;
-	      // Make `global` and avoid `lastIndex` issues by working with a copy
-	      var separatorCopy = new RegExp(separator.source, flags + 'g');
-	      var match, lastIndex, lastLength;
-	      while (match = regexpExec$1.call(separatorCopy, string)) {
-	        lastIndex = separatorCopy.lastIndex;
-	        if (lastIndex > lastLastIndex) {
-	          output.push(string.slice(lastLastIndex, match.index));
-	          if (match.length > 1 && match.index < string.length) arrayPush$1.apply(output, match.slice(1));
-	          lastLength = match[0].length;
-	          lastLastIndex = lastIndex;
-	          if (output.length >= lim) break;
-	        }
-	        if (separatorCopy.lastIndex === match.index) separatorCopy.lastIndex++; // Avoid an infinite loop
-	      }
-	      if (lastLastIndex === string.length) {
-	        if (lastLength || !separatorCopy.test('')) output.push('');
-	      } else output.push(string.slice(lastLastIndex));
-	      return output.length > lim ? output.slice(0, lim) : output;
-	    };
-	  // Chakra, V8
-	  } else if ('0'.split(undefined, 0).length) {
-	    internalSplit = function (separator, limit) {
-	      return separator === undefined && limit === 0 ? [] : nativeSplit.call(this, separator, limit);
-	    };
-	  } else internalSplit = nativeSplit;
-
-	  return [
-	    // `String.prototype.split` method
-	    // https://tc39.github.io/ecma262/#sec-string.prototype.split
-	    function split(separator, limit) {
-	      var O = requireObjectCoercible$1(this);
-	      var splitter = separator == undefined ? undefined : separator[SPLIT];
-	      return splitter !== undefined
-	        ? splitter.call(separator, O, limit)
-	        : internalSplit.call(String(O), separator, limit);
-	    },
-	    // `RegExp.prototype[@@split]` method
-	    // https://tc39.github.io/ecma262/#sec-regexp.prototype-@@split
-	    //
-	    // NOTE: This cannot be properly polyfilled in engines that don't support
-	    // the 'y' flag.
-	    function (regexp, limit) {
-	      var res = maybeCallNative(internalSplit, regexp, this, limit, internalSplit !== nativeSplit);
-	      if (res.done) return res.value;
-
-	      var rx = anObject$1(regexp);
-	      var S = String(this);
-	      var C = speciesConstructor$1(rx, RegExp);
-
-	      var unicodeMatching = rx.unicode;
-	      var flags = (rx.ignoreCase ? 'i' : '') +
-	                  (rx.multiline ? 'm' : '') +
-	                  (rx.unicode ? 'u' : '') +
-	                  (SUPPORTS_Y$1 ? 'y' : 'g');
-
-	      // ^(? + rx + ) is needed, in combination with some S slicing, to
-	      // simulate the 'y' flag.
-	      var splitter = new C(SUPPORTS_Y$1 ? rx : '^(?:' + rx.source + ')', flags);
-	      var lim = limit === undefined ? MAX_UINT32$1 : limit >>> 0;
-	      if (lim === 0) return [];
-	      if (S.length === 0) return regexpExecAbstract$1(splitter, S) === null ? [S] : [];
-	      var p = 0;
-	      var q = 0;
-	      var A = [];
-	      while (q < S.length) {
-	        splitter.lastIndex = SUPPORTS_Y$1 ? q : 0;
-	        var z = regexpExecAbstract$1(splitter, SUPPORTS_Y$1 ? S : S.slice(q));
-	        var e;
-	        if (
-	          z === null ||
-	          (e = min$7(toLength$1(splitter.lastIndex + (SUPPORTS_Y$1 ? 0 : q)), S.length)) === p
-	        ) {
-	          q = advanceStringIndex$1(S, q, unicodeMatching);
-	        } else {
-	          A.push(S.slice(p, q));
-	          if (A.length === lim) return A;
-	          for (var i = 1; i <= z.length - 1; i++) {
-	            A.push(z[i]);
-	            if (A.length === lim) return A;
-	          }
-	          q = p = e;
-	        }
-	      }
-	      A.push(S.slice(p));
-	      return A;
-	    }
-	  ];
-	}, !SUPPORTS_Y$1);
-
-	var non = '\u200B\u0085\u180E';
-
-	// check that a method works with the correct list
-	// of whitespaces and has a correct name
-	var stringTrimForced = function (METHOD_NAME) {
-	  return fails$1(function () {
-	    return !!whitespaces[METHOD_NAME]() || non[METHOD_NAME]() != non || whitespaces[METHOD_NAME].name !== METHOD_NAME;
-	  });
-	};
-
-	var $trim = stringTrim.trim;
-
-
-	// `String.prototype.trim` method
-	// https://tc39.github.io/ecma262/#sec-string.prototype.trim
-	_export$1({ target: 'String', proto: true, forced: stringTrimForced('trim') }, {
-	  trim: function trim() {
-	    return $trim(this);
-	  }
-	});
-
 	for (var COLLECTION_NAME$3 in domIterables$1) {
 	  var Collection$3 = global_1$1[COLLECTION_NAME$3];
 	  var CollectionPrototype$3 = Collection$3 && Collection$3.prototype;
@@ -8277,6 +7303,661 @@ typeof navigator === "object" && (function () {
 	    CollectionPrototype$3.forEach = arrayForEach$1;
 	  }
 	}
+
+	// `Number.isNaN` method
+	// https://tc39.github.io/ecma262/#sec-number.isnan
+	_export$1({ target: 'Number', stat: true }, {
+	  isNaN: function isNaN(number) {
+	    // eslint-disable-next-line no-self-compare
+	    return number != number;
+	  }
+	});
+
+	var nativePromiseConstructor = global_1$1.Promise;
+
+	var SPECIES$8 = wellKnownSymbol$1('species');
+
+	var setSpecies = function (CONSTRUCTOR_NAME) {
+	  var Constructor = getBuiltIn$1(CONSTRUCTOR_NAME);
+	  var defineProperty = objectDefineProperty$1.f;
+
+	  if (descriptors$1 && Constructor && !Constructor[SPECIES$8]) {
+	    defineProperty(Constructor, SPECIES$8, {
+	      configurable: true,
+	      get: function () { return this; }
+	    });
+	  }
+	};
+
+	var SPECIES$9 = wellKnownSymbol$1('species');
+
+	// `SpeciesConstructor` abstract operation
+	// https://tc39.github.io/ecma262/#sec-speciesconstructor
+	var speciesConstructor$1 = function (O, defaultConstructor) {
+	  var C = anObject$1(O).constructor;
+	  var S;
+	  return C === undefined || (S = anObject$1(C)[SPECIES$9]) == undefined ? defaultConstructor : aFunction$3(S);
+	};
+
+	var engineIsIos = /(iphone|ipod|ipad).*applewebkit/i.test(engineUserAgent$1);
+
+	var engineIsNode = classofRaw$1(global_1$1.process) == 'process';
+
+	var location = global_1$1.location;
+	var set$2 = global_1$1.setImmediate;
+	var clear = global_1$1.clearImmediate;
+	var process$2 = global_1$1.process;
+	var MessageChannel = global_1$1.MessageChannel;
+	var Dispatch = global_1$1.Dispatch;
+	var counter = 0;
+	var queue = {};
+	var ONREADYSTATECHANGE = 'onreadystatechange';
+	var defer, channel, port;
+
+	var run = function (id) {
+	  // eslint-disable-next-line no-prototype-builtins
+	  if (queue.hasOwnProperty(id)) {
+	    var fn = queue[id];
+	    delete queue[id];
+	    fn();
+	  }
+	};
+
+	var runner = function (id) {
+	  return function () {
+	    run(id);
+	  };
+	};
+
+	var listener = function (event) {
+	  run(event.data);
+	};
+
+	var post = function (id) {
+	  // old engines have not location.origin
+	  global_1$1.postMessage(id + '', location.protocol + '//' + location.host);
+	};
+
+	// Node.js 0.9+ & IE10+ has setImmediate, otherwise:
+	if (!set$2 || !clear) {
+	  set$2 = function setImmediate(fn) {
+	    var args = [];
+	    var i = 1;
+	    while (arguments.length > i) args.push(arguments[i++]);
+	    queue[++counter] = function () {
+	      // eslint-disable-next-line no-new-func
+	      (typeof fn == 'function' ? fn : Function(fn)).apply(undefined, args);
+	    };
+	    defer(counter);
+	    return counter;
+	  };
+	  clear = function clearImmediate(id) {
+	    delete queue[id];
+	  };
+	  // Node.js 0.8-
+	  if (engineIsNode) {
+	    defer = function (id) {
+	      process$2.nextTick(runner(id));
+	    };
+	  // Sphere (JS game engine) Dispatch API
+	  } else if (Dispatch && Dispatch.now) {
+	    defer = function (id) {
+	      Dispatch.now(runner(id));
+	    };
+	  // Browsers with MessageChannel, includes WebWorkers
+	  // except iOS - https://github.com/zloirock/core-js/issues/624
+	  } else if (MessageChannel && !engineIsIos) {
+	    channel = new MessageChannel();
+	    port = channel.port2;
+	    channel.port1.onmessage = listener;
+	    defer = functionBindContext$1(port.postMessage, port, 1);
+	  // Browsers with postMessage, skip WebWorkers
+	  // IE8 has postMessage, but it's sync & typeof its postMessage is 'object'
+	  } else if (
+	    global_1$1.addEventListener &&
+	    typeof postMessage == 'function' &&
+	    !global_1$1.importScripts &&
+	    location && location.protocol !== 'file:' &&
+	    !fails$1(post)
+	  ) {
+	    defer = post;
+	    global_1$1.addEventListener('message', listener, false);
+	  // IE8-
+	  } else if (ONREADYSTATECHANGE in documentCreateElement$1('script')) {
+	    defer = function (id) {
+	      html$1.appendChild(documentCreateElement$1('script'))[ONREADYSTATECHANGE] = function () {
+	        html$1.removeChild(this);
+	        run(id);
+	      };
+	    };
+	  // Rest old browsers
+	  } else {
+	    defer = function (id) {
+	      setTimeout(runner(id), 0);
+	    };
+	  }
+	}
+
+	var task = {
+	  set: set$2,
+	  clear: clear
+	};
+
+	var getOwnPropertyDescriptor$5 = objectGetOwnPropertyDescriptor$1.f;
+	var macrotask = task.set;
+
+
+
+	var MutationObserver$1 = global_1$1.MutationObserver || global_1$1.WebKitMutationObserver;
+	var document$3 = global_1$1.document;
+	var process$3 = global_1$1.process;
+	var Promise$1 = global_1$1.Promise;
+	// Node.js 11 shows ExperimentalWarning on getting `queueMicrotask`
+	var queueMicrotaskDescriptor = getOwnPropertyDescriptor$5(global_1$1, 'queueMicrotask');
+	var queueMicrotask = queueMicrotaskDescriptor && queueMicrotaskDescriptor.value;
+
+	var flush, head, last, notify, toggle, node, promise, then;
+
+	// modern engines have queueMicrotask method
+	if (!queueMicrotask) {
+	  flush = function () {
+	    var parent, fn;
+	    if (engineIsNode && (parent = process$3.domain)) parent.exit();
+	    while (head) {
+	      fn = head.fn;
+	      head = head.next;
+	      try {
+	        fn();
+	      } catch (error) {
+	        if (head) notify();
+	        else last = undefined;
+	        throw error;
+	      }
+	    } last = undefined;
+	    if (parent) parent.enter();
+	  };
+
+	  // browsers with MutationObserver, except iOS - https://github.com/zloirock/core-js/issues/339
+	  if (!engineIsIos && !engineIsNode && MutationObserver$1 && document$3) {
+	    toggle = true;
+	    node = document$3.createTextNode('');
+	    new MutationObserver$1(flush).observe(node, { characterData: true });
+	    notify = function () {
+	      node.data = toggle = !toggle;
+	    };
+	  // environments with maybe non-completely correct, but existent Promise
+	  } else if (Promise$1 && Promise$1.resolve) {
+	    // Promise.resolve without an argument throws an error in LG WebOS 2
+	    promise = Promise$1.resolve(undefined);
+	    then = promise.then;
+	    notify = function () {
+	      then.call(promise, flush);
+	    };
+	  // Node.js without promises
+	  } else if (engineIsNode) {
+	    notify = function () {
+	      process$3.nextTick(flush);
+	    };
+	  // for other environments - macrotask based on:
+	  // - setImmediate
+	  // - MessageChannel
+	  // - window.postMessag
+	  // - onreadystatechange
+	  // - setTimeout
+	  } else {
+	    notify = function () {
+	      // strange IE + webpack dev server bug - use .call(global)
+	      macrotask.call(global_1$1, flush);
+	    };
+	  }
+	}
+
+	var microtask = queueMicrotask || function (fn) {
+	  var task = { fn: fn, next: undefined };
+	  if (last) last.next = task;
+	  if (!head) {
+	    head = task;
+	    notify();
+	  } last = task;
+	};
+
+	var PromiseCapability = function (C) {
+	  var resolve, reject;
+	  this.promise = new C(function ($$resolve, $$reject) {
+	    if (resolve !== undefined || reject !== undefined) throw TypeError('Bad Promise constructor');
+	    resolve = $$resolve;
+	    reject = $$reject;
+	  });
+	  this.resolve = aFunction$3(resolve);
+	  this.reject = aFunction$3(reject);
+	};
+
+	// 25.4.1.5 NewPromiseCapability(C)
+	var f$d = function (C) {
+	  return new PromiseCapability(C);
+	};
+
+	var newPromiseCapability = {
+		f: f$d
+	};
+
+	var promiseResolve = function (C, x) {
+	  anObject$1(C);
+	  if (isObject$1(x) && x.constructor === C) return x;
+	  var promiseCapability = newPromiseCapability.f(C);
+	  var resolve = promiseCapability.resolve;
+	  resolve(x);
+	  return promiseCapability.promise;
+	};
+
+	var hostReportErrors = function (a, b) {
+	  var console = global_1$1.console;
+	  if (console && console.error) {
+	    arguments.length === 1 ? console.error(a) : console.error(a, b);
+	  }
+	};
+
+	var perform = function (exec) {
+	  try {
+	    return { error: false, value: exec() };
+	  } catch (error) {
+	    return { error: true, value: error };
+	  }
+	};
+
+	var task$1 = task.set;
+
+
+
+
+
+
+
+
+
+
+
+	var SPECIES$a = wellKnownSymbol$1('species');
+	var PROMISE = 'Promise';
+	var getInternalState$5 = internalState$1.get;
+	var setInternalState$8 = internalState$1.set;
+	var getInternalPromiseState = internalState$1.getterFor(PROMISE);
+	var PromiseConstructor = nativePromiseConstructor;
+	var TypeError$1 = global_1$1.TypeError;
+	var document$4 = global_1$1.document;
+	var process$4 = global_1$1.process;
+	var $fetch$1 = getBuiltIn$1('fetch');
+	var newPromiseCapability$1 = newPromiseCapability.f;
+	var newGenericPromiseCapability = newPromiseCapability$1;
+	var DISPATCH_EVENT = !!(document$4 && document$4.createEvent && global_1$1.dispatchEvent);
+	var NATIVE_REJECTION_EVENT = typeof PromiseRejectionEvent == 'function';
+	var UNHANDLED_REJECTION = 'unhandledrejection';
+	var REJECTION_HANDLED = 'rejectionhandled';
+	var PENDING = 0;
+	var FULFILLED = 1;
+	var REJECTED = 2;
+	var HANDLED = 1;
+	var UNHANDLED = 2;
+	var Internal, OwnPromiseCapability, PromiseWrapper, nativeThen;
+
+	var FORCED$1 = isForced_1$1(PROMISE, function () {
+	  var GLOBAL_CORE_JS_PROMISE = inspectSource$1(PromiseConstructor) !== String(PromiseConstructor);
+	  if (!GLOBAL_CORE_JS_PROMISE) {
+	    // V8 6.6 (Node 10 and Chrome 66) have a bug with resolving custom thenables
+	    // https://bugs.chromium.org/p/chromium/issues/detail?id=830565
+	    // We can't detect it synchronously, so just check versions
+	    if (engineV8Version$1 === 66) return true;
+	    // Unhandled rejections tracking support, NodeJS Promise without it fails @@species test
+	    if (!engineIsNode && !NATIVE_REJECTION_EVENT) return true;
+	  }
+	  // We can't use @@species feature detection in V8 since it causes
+	  // deoptimization and performance degradation
+	  // https://github.com/zloirock/core-js/issues/679
+	  if (engineV8Version$1 >= 51 && /native code/.test(PromiseConstructor)) return false;
+	  // Detect correctness of subclassing with @@species support
+	  var promise = PromiseConstructor.resolve(1);
+	  var FakePromise = function (exec) {
+	    exec(function () { /* empty */ }, function () { /* empty */ });
+	  };
+	  var constructor = promise.constructor = {};
+	  constructor[SPECIES$a] = FakePromise;
+	  return !(promise.then(function () { /* empty */ }) instanceof FakePromise);
+	});
+
+	var INCORRECT_ITERATION$2 = FORCED$1 || !checkCorrectnessOfIteration$1(function (iterable) {
+	  PromiseConstructor.all(iterable)['catch'](function () { /* empty */ });
+	});
+
+	// helpers
+	var isThenable = function (it) {
+	  var then;
+	  return isObject$1(it) && typeof (then = it.then) == 'function' ? then : false;
+	};
+
+	var notify$1 = function (state, isReject) {
+	  if (state.notified) return;
+	  state.notified = true;
+	  var chain = state.reactions;
+	  microtask(function () {
+	    var value = state.value;
+	    var ok = state.state == FULFILLED;
+	    var index = 0;
+	    // variable length - can't use forEach
+	    while (chain.length > index) {
+	      var reaction = chain[index++];
+	      var handler = ok ? reaction.ok : reaction.fail;
+	      var resolve = reaction.resolve;
+	      var reject = reaction.reject;
+	      var domain = reaction.domain;
+	      var result, then, exited;
+	      try {
+	        if (handler) {
+	          if (!ok) {
+	            if (state.rejection === UNHANDLED) onHandleUnhandled(state);
+	            state.rejection = HANDLED;
+	          }
+	          if (handler === true) result = value;
+	          else {
+	            if (domain) domain.enter();
+	            result = handler(value); // can throw
+	            if (domain) {
+	              domain.exit();
+	              exited = true;
+	            }
+	          }
+	          if (result === reaction.promise) {
+	            reject(TypeError$1('Promise-chain cycle'));
+	          } else if (then = isThenable(result)) {
+	            then.call(result, resolve, reject);
+	          } else resolve(result);
+	        } else reject(value);
+	      } catch (error) {
+	        if (domain && !exited) domain.exit();
+	        reject(error);
+	      }
+	    }
+	    state.reactions = [];
+	    state.notified = false;
+	    if (isReject && !state.rejection) onUnhandled(state);
+	  });
+	};
+
+	var dispatchEvent = function (name, promise, reason) {
+	  var event, handler;
+	  if (DISPATCH_EVENT) {
+	    event = document$4.createEvent('Event');
+	    event.promise = promise;
+	    event.reason = reason;
+	    event.initEvent(name, false, true);
+	    global_1$1.dispatchEvent(event);
+	  } else event = { promise: promise, reason: reason };
+	  if (!NATIVE_REJECTION_EVENT && (handler = global_1$1['on' + name])) handler(event);
+	  else if (name === UNHANDLED_REJECTION) hostReportErrors('Unhandled promise rejection', reason);
+	};
+
+	var onUnhandled = function (state) {
+	  task$1.call(global_1$1, function () {
+	    var promise = state.facade;
+	    var value = state.value;
+	    var IS_UNHANDLED = isUnhandled(state);
+	    var result;
+	    if (IS_UNHANDLED) {
+	      result = perform(function () {
+	        if (engineIsNode) {
+	          process$4.emit('unhandledRejection', value, promise);
+	        } else dispatchEvent(UNHANDLED_REJECTION, promise, value);
+	      });
+	      // Browsers should not trigger `rejectionHandled` event if it was handled here, NodeJS - should
+	      state.rejection = engineIsNode || isUnhandled(state) ? UNHANDLED : HANDLED;
+	      if (result.error) throw result.value;
+	    }
+	  });
+	};
+
+	var isUnhandled = function (state) {
+	  return state.rejection !== HANDLED && !state.parent;
+	};
+
+	var onHandleUnhandled = function (state) {
+	  task$1.call(global_1$1, function () {
+	    var promise = state.facade;
+	    if (engineIsNode) {
+	      process$4.emit('rejectionHandled', promise);
+	    } else dispatchEvent(REJECTION_HANDLED, promise, state.value);
+	  });
+	};
+
+	var bind = function (fn, state, unwrap) {
+	  return function (value) {
+	    fn(state, value, unwrap);
+	  };
+	};
+
+	var internalReject = function (state, value, unwrap) {
+	  if (state.done) return;
+	  state.done = true;
+	  if (unwrap) state = unwrap;
+	  state.value = value;
+	  state.state = REJECTED;
+	  notify$1(state, true);
+	};
+
+	var internalResolve = function (state, value, unwrap) {
+	  if (state.done) return;
+	  state.done = true;
+	  if (unwrap) state = unwrap;
+	  try {
+	    if (state.facade === value) throw TypeError$1("Promise can't be resolved itself");
+	    var then = isThenable(value);
+	    if (then) {
+	      microtask(function () {
+	        var wrapper = { done: false };
+	        try {
+	          then.call(value,
+	            bind(internalResolve, wrapper, state),
+	            bind(internalReject, wrapper, state)
+	          );
+	        } catch (error) {
+	          internalReject(wrapper, error, state);
+	        }
+	      });
+	    } else {
+	      state.value = value;
+	      state.state = FULFILLED;
+	      notify$1(state, false);
+	    }
+	  } catch (error) {
+	    internalReject({ done: false }, error, state);
+	  }
+	};
+
+	// constructor polyfill
+	if (FORCED$1) {
+	  // 25.4.3.1 Promise(executor)
+	  PromiseConstructor = function Promise(executor) {
+	    anInstance$1(this, PromiseConstructor, PROMISE);
+	    aFunction$3(executor);
+	    Internal.call(this);
+	    var state = getInternalState$5(this);
+	    try {
+	      executor(bind(internalResolve, state), bind(internalReject, state));
+	    } catch (error) {
+	      internalReject(state, error);
+	    }
+	  };
+	  // eslint-disable-next-line no-unused-vars
+	  Internal = function Promise(executor) {
+	    setInternalState$8(this, {
+	      type: PROMISE,
+	      done: false,
+	      notified: false,
+	      parent: false,
+	      reactions: [],
+	      rejection: false,
+	      state: PENDING,
+	      value: undefined
+	    });
+	  };
+	  Internal.prototype = redefineAll$1(PromiseConstructor.prototype, {
+	    // `Promise.prototype.then` method
+	    // https://tc39.github.io/ecma262/#sec-promise.prototype.then
+	    then: function then(onFulfilled, onRejected) {
+	      var state = getInternalPromiseState(this);
+	      var reaction = newPromiseCapability$1(speciesConstructor$1(this, PromiseConstructor));
+	      reaction.ok = typeof onFulfilled == 'function' ? onFulfilled : true;
+	      reaction.fail = typeof onRejected == 'function' && onRejected;
+	      reaction.domain = engineIsNode ? process$4.domain : undefined;
+	      state.parent = true;
+	      state.reactions.push(reaction);
+	      if (state.state != PENDING) notify$1(state, false);
+	      return reaction.promise;
+	    },
+	    // `Promise.prototype.catch` method
+	    // https://tc39.github.io/ecma262/#sec-promise.prototype.catch
+	    'catch': function (onRejected) {
+	      return this.then(undefined, onRejected);
+	    }
+	  });
+	  OwnPromiseCapability = function () {
+	    var promise = new Internal();
+	    var state = getInternalState$5(promise);
+	    this.promise = promise;
+	    this.resolve = bind(internalResolve, state);
+	    this.reject = bind(internalReject, state);
+	  };
+	  newPromiseCapability.f = newPromiseCapability$1 = function (C) {
+	    return C === PromiseConstructor || C === PromiseWrapper
+	      ? new OwnPromiseCapability(C)
+	      : newGenericPromiseCapability(C);
+	  };
+
+	  if ( typeof nativePromiseConstructor == 'function') {
+	    nativeThen = nativePromiseConstructor.prototype.then;
+
+	    // wrap native Promise#then for native async functions
+	    redefine$1(nativePromiseConstructor.prototype, 'then', function then(onFulfilled, onRejected) {
+	      var that = this;
+	      return new PromiseConstructor(function (resolve, reject) {
+	        nativeThen.call(that, resolve, reject);
+	      }).then(onFulfilled, onRejected);
+	    // https://github.com/zloirock/core-js/issues/640
+	    }, { unsafe: true });
+
+	    // wrap fetch result
+	    if (typeof $fetch$1 == 'function') _export$1({ global: true, enumerable: true, forced: true }, {
+	      // eslint-disable-next-line no-unused-vars
+	      fetch: function fetch(input /* , init */) {
+	        return promiseResolve(PromiseConstructor, $fetch$1.apply(global_1$1, arguments));
+	      }
+	    });
+	  }
+	}
+
+	_export$1({ global: true, wrap: true, forced: FORCED$1 }, {
+	  Promise: PromiseConstructor
+	});
+
+	setToStringTag$1(PromiseConstructor, PROMISE, false);
+	setSpecies(PROMISE);
+
+	PromiseWrapper = getBuiltIn$1(PROMISE);
+
+	// statics
+	_export$1({ target: PROMISE, stat: true, forced: FORCED$1 }, {
+	  // `Promise.reject` method
+	  // https://tc39.github.io/ecma262/#sec-promise.reject
+	  reject: function reject(r) {
+	    var capability = newPromiseCapability$1(this);
+	    capability.reject.call(undefined, r);
+	    return capability.promise;
+	  }
+	});
+
+	_export$1({ target: PROMISE, stat: true, forced:  FORCED$1 }, {
+	  // `Promise.resolve` method
+	  // https://tc39.github.io/ecma262/#sec-promise.resolve
+	  resolve: function resolve(x) {
+	    return promiseResolve( this, x);
+	  }
+	});
+
+	_export$1({ target: PROMISE, stat: true, forced: INCORRECT_ITERATION$2 }, {
+	  // `Promise.all` method
+	  // https://tc39.github.io/ecma262/#sec-promise.all
+	  all: function all(iterable) {
+	    var C = this;
+	    var capability = newPromiseCapability$1(C);
+	    var resolve = capability.resolve;
+	    var reject = capability.reject;
+	    var result = perform(function () {
+	      var $promiseResolve = aFunction$3(C.resolve);
+	      var values = [];
+	      var counter = 0;
+	      var remaining = 1;
+	      iterate(iterable, function (promise) {
+	        var index = counter++;
+	        var alreadyCalled = false;
+	        values.push(undefined);
+	        remaining++;
+	        $promiseResolve.call(C, promise).then(function (value) {
+	          if (alreadyCalled) return;
+	          alreadyCalled = true;
+	          values[index] = value;
+	          --remaining || resolve(values);
+	        }, reject);
+	      });
+	      --remaining || resolve(values);
+	    });
+	    if (result.error) reject(result.value);
+	    return capability.promise;
+	  },
+	  // `Promise.race` method
+	  // https://tc39.github.io/ecma262/#sec-promise.race
+	  race: function race(iterable) {
+	    var C = this;
+	    var capability = newPromiseCapability$1(C);
+	    var reject = capability.reject;
+	    var result = perform(function () {
+	      var $promiseResolve = aFunction$3(C.resolve);
+	      iterate(iterable, function (promise) {
+	        $promiseResolve.call(C, promise).then(capability.resolve, reject);
+	      });
+	    });
+	    if (result.error) reject(result.value);
+	    return capability.promise;
+	  }
+	});
+
+	var getOwnPropertyDescriptor$6 = objectGetOwnPropertyDescriptor$1.f;
+
+
+
+
+
+
+	var nativeStartsWith = ''.startsWith;
+	var min$6 = Math.min;
+
+	var CORRECT_IS_REGEXP_LOGIC = correctIsRegexpLogic$1('startsWith');
+	// https://github.com/zloirock/core-js/pull/702
+	var MDN_POLYFILL_BUG =  !CORRECT_IS_REGEXP_LOGIC && !!function () {
+	  var descriptor = getOwnPropertyDescriptor$6(String.prototype, 'startsWith');
+	  return descriptor && !descriptor.writable;
+	}();
+
+	// `String.prototype.startsWith` method
+	// https://tc39.github.io/ecma262/#sec-string.prototype.startswith
+	_export$1({ target: 'String', proto: true, forced: !MDN_POLYFILL_BUG && !CORRECT_IS_REGEXP_LOGIC }, {
+	  startsWith: function startsWith(searchString /* , position = 0 */) {
+	    var that = String(requireObjectCoercible$1(this));
+	    notARegexp$1(searchString);
+	    var index = toLength$1(min$6(arguments.length > 1 ? arguments[1] : undefined, that.length));
+	    var search = String(searchString);
+	    return nativeStartsWith
+	      ? nativeStartsWith.call(that, search, index)
+	      : that.slice(index, index + search.length) === search;
+	  }
+	});
 
 	var ITERATOR$e = wellKnownSymbol$1('iterator');
 
@@ -8366,7 +8047,7 @@ typeof navigator === "object" && (function () {
 	var regexSeparators$1 = /[.\u3002\uFF0E\uFF61]/g; // RFC 3490 separators
 	var OVERFLOW_ERROR$1 = 'Overflow: input needs wider integers to process';
 	var baseMinusTMin$1 = base$1 - tMin$1;
-	var floor$7 = Math.floor;
+	var floor$5 = Math.floor;
 	var stringFromCharCode$1 = String.fromCharCode;
 
 	/**
@@ -8415,12 +8096,12 @@ typeof navigator === "object" && (function () {
 	 */
 	var adapt$1 = function (delta, numPoints, firstTime) {
 	  var k = 0;
-	  delta = firstTime ? floor$7(delta / damp$1) : delta >> 1;
-	  delta += floor$7(delta / numPoints);
+	  delta = firstTime ? floor$5(delta / damp$1) : delta >> 1;
+	  delta += floor$5(delta / numPoints);
 	  for (; delta > baseMinusTMin$1 * tMax$1 >> 1; k += base$1) {
-	    delta = floor$7(delta / baseMinusTMin$1);
+	    delta = floor$5(delta / baseMinusTMin$1);
 	  }
-	  return floor$7(k + (baseMinusTMin$1 + 1) * delta / (delta + skew$1));
+	  return floor$5(k + (baseMinusTMin$1 + 1) * delta / (delta + skew$1));
 	};
 
 	/**
@@ -8472,7 +8153,7 @@ typeof navigator === "object" && (function () {
 
 	    // Increase `delta` enough to advance the decoder's <n,i> state to <m,0>, but guard against overflow.
 	    var handledCPCountPlusOne = handledCPCount + 1;
-	    if (m - n > floor$7((maxInt$1 - delta) / handledCPCountPlusOne)) {
+	    if (m - n > floor$5((maxInt$1 - delta) / handledCPCountPlusOne)) {
 	      throw RangeError(OVERFLOW_ERROR$1);
 	    }
 
@@ -8493,7 +8174,7 @@ typeof navigator === "object" && (function () {
 	          var qMinusT = q - t;
 	          var baseMinusT = base$1 - t;
 	          output.push(stringFromCharCode$1(digitToBasic$1(t + qMinusT % baseMinusT)));
-	          q = floor$7(qMinusT / baseMinusT);
+	          q = floor$5(qMinusT / baseMinusT);
 	        }
 
 	        output.push(stringFromCharCode$1(digitToBasic$1(q)));
@@ -8549,12 +8230,12 @@ typeof navigator === "object" && (function () {
 
 
 
-	var $fetch$1 = getBuiltIn$1('fetch');
+	var $fetch$2 = getBuiltIn$1('fetch');
 	var Headers$1 = getBuiltIn$1('Headers');
 	var ITERATOR$f = wellKnownSymbol$1('iterator');
 	var URL_SEARCH_PARAMS$1 = 'URLSearchParams';
 	var URL_SEARCH_PARAMS_ITERATOR$1 = URL_SEARCH_PARAMS$1 + 'Iterator';
-	var setInternalState$8 = internalState$1.set;
+	var setInternalState$9 = internalState$1.set;
 	var getInternalParamsState$1 = internalState$1.getterFor(URL_SEARCH_PARAMS$1);
 	var getInternalIteratorState$1 = internalState$1.getterFor(URL_SEARCH_PARAMS_ITERATOR$1);
 
@@ -8633,7 +8314,7 @@ typeof navigator === "object" && (function () {
 	};
 
 	var URLSearchParamsIterator$1 = createIteratorConstructor$1(function Iterator(params, kind) {
-	  setInternalState$8(this, {
+	  setInternalState$9(this, {
 	    type: URL_SEARCH_PARAMS_ITERATOR$1,
 	    iterator: getIterator$1(getInternalParamsState$1(params).entries),
 	    kind: kind
@@ -8657,7 +8338,7 @@ typeof navigator === "object" && (function () {
 	  var entries = [];
 	  var iteratorMethod, iterator, next, step, entryIterator, entryNext, first, second, key;
 
-	  setInternalState$8(that, {
+	  setInternalState$9(that, {
 	    type: URL_SEARCH_PARAMS$1,
 	    entries: entries,
 	    updateURL: function () { /* empty */ },
@@ -8843,7 +8524,7 @@ typeof navigator === "object" && (function () {
 
 	// Wrap `fetch` for correct work with polyfilled `URLSearchParams`
 	// https://github.com/zloirock/core-js/issues/674
-	if (!nativeUrl$1 && typeof $fetch$1 == 'function' && typeof Headers$1 == 'function') {
+	if (!nativeUrl$1 && typeof $fetch$2 == 'function' && typeof Headers$1 == 'function') {
 	  _export$1({ global: true, enumerable: true, forced: true }, {
 	    fetch: function fetch(input /* , init */) {
 	      var args = [input];
@@ -8864,7 +8545,7 @@ typeof navigator === "object" && (function () {
 	          }
 	        }
 	        args.push(init);
-	      } return $fetch$1.apply(this, args);
+	      } return $fetch$2.apply(this, args);
 	    }
 	  });
 	}
@@ -8895,10 +8576,10 @@ typeof navigator === "object" && (function () {
 	var NativeURL$1 = global_1$1.URL;
 	var URLSearchParams$2 = web_urlSearchParams$1.URLSearchParams;
 	var getInternalSearchParamsState$1 = web_urlSearchParams$1.getState;
-	var setInternalState$9 = internalState$1.set;
+	var setInternalState$a = internalState$1.set;
 	var getInternalURLState$1 = internalState$1.getterFor('URL');
-	var floor$8 = Math.floor;
-	var pow$2 = Math.pow;
+	var floor$6 = Math.floor;
+	var pow$1 = Math.pow;
 
 	var INVALID_AUTHORITY$1 = 'Invalid authority';
 	var INVALID_SCHEME$1 = 'Invalid scheme';
@@ -8975,12 +8656,12 @@ typeof navigator === "object" && (function () {
 	  for (index = 0; index < partsLength; index++) {
 	    number = numbers[index];
 	    if (index == partsLength - 1) {
-	      if (number >= pow$2(256, 5 - partsLength)) return null;
+	      if (number >= pow$1(256, 5 - partsLength)) return null;
 	    } else if (number > 255) return null;
 	  }
 	  ipv4 = numbers.pop();
 	  for (index = 0; index < numbers.length; index++) {
-	    ipv4 += numbers[index] * pow$2(256, 3 - index);
+	    ipv4 += numbers[index] * pow$1(256, 3 - index);
 	  }
 	  return ipv4;
 	};
@@ -9095,7 +8776,7 @@ typeof navigator === "object" && (function () {
 	    result = [];
 	    for (index = 0; index < 4; index++) {
 	      result.unshift(host % 256);
-	      host = floor$8(host / 256);
+	      host = floor$6(host / 256);
 	    } return result.join('.');
 	  // ipv6
 	  } else if (typeof host == 'object') {
@@ -9612,7 +9293,7 @@ typeof navigator === "object" && (function () {
 	  var that = anInstance$1(this, URLConstructor$1, 'URL');
 	  var base = arguments.length > 1 ? arguments[1] : undefined;
 	  var urlString = String(url);
-	  var state = setInternalState$9(that, { type: 'URL' });
+	  var state = setInternalState$a(that, { type: 'URL' });
 	  var baseState, failure;
 	  if (base !== undefined) {
 	    if (base instanceof URLConstructor$1) baseState = getInternalURLState$1(base);
@@ -9881,17 +9562,1387 @@ typeof navigator === "object" && (function () {
 	  URL: URLConstructor$1
 	});
 
-	var f$d = wellKnownSymbol$1;
-
-	var wellKnownSymbolWrapped$1 = {
-		f: f$d
+	// ==========================================================================
+	// Type checking utils
+	// ==========================================================================
+	var getConstructor = function getConstructor(input) {
+	  return input !== null && typeof input !== 'undefined' ? input.constructor : null;
 	};
 
+	var instanceOf = function instanceOf(input, constructor) {
+	  return Boolean(input && constructor && input instanceof constructor);
+	};
+
+	var isNullOrUndefined = function isNullOrUndefined(input) {
+	  return input === null || typeof input === 'undefined';
+	};
+
+	var isObject$2 = function isObject(input) {
+	  return getConstructor(input) === Object;
+	};
+
+	var isNumber = function isNumber(input) {
+	  return getConstructor(input) === Number && !Number.isNaN(input);
+	};
+
+	var isString = function isString(input) {
+	  return getConstructor(input) === String;
+	};
+
+	var isBoolean = function isBoolean(input) {
+	  return getConstructor(input) === Boolean;
+	};
+
+	var isFunction = function isFunction(input) {
+	  return getConstructor(input) === Function;
+	};
+
+	var isArray$2 = function isArray(input) {
+	  return Array.isArray(input);
+	};
+
+	var isWeakMap = function isWeakMap(input) {
+	  return instanceOf(input, WeakMap);
+	};
+
+	var isNodeList = function isNodeList(input) {
+	  return instanceOf(input, NodeList);
+	};
+
+	var isElement = function isElement(input) {
+	  return instanceOf(input, Element);
+	};
+
+	var isTextNode = function isTextNode(input) {
+	  return getConstructor(input) === Text;
+	};
+
+	var isEvent = function isEvent(input) {
+	  return instanceOf(input, Event);
+	};
+
+	var isKeyboardEvent = function isKeyboardEvent(input) {
+	  return instanceOf(input, KeyboardEvent);
+	};
+
+	var isCue = function isCue(input) {
+	  return instanceOf(input, window.TextTrackCue) || instanceOf(input, window.VTTCue);
+	};
+
+	var isTrack = function isTrack(input) {
+	  return instanceOf(input, TextTrack) || !isNullOrUndefined(input) && isString(input.kind);
+	};
+
+	var isPromise = function isPromise(input) {
+	  return instanceOf(input, Promise) && isFunction(input.then);
+	};
+
+	var isEmpty = function isEmpty(input) {
+	  return isNullOrUndefined(input) || (isString(input) || isArray$2(input) || isNodeList(input)) && !input.length || isObject$2(input) && !Object.keys(input).length;
+	};
+
+	var isUrl = function isUrl(input) {
+	  // Accept a URL object
+	  if (instanceOf(input, window.URL)) {
+	    return true;
+	  } // Must be string from here
+
+
+	  if (!isString(input)) {
+	    return false;
+	  } // Add the protocol if required
+
+
+	  var string = input;
+
+	  if (!input.startsWith('http://') || !input.startsWith('https://')) {
+	    string = "http://".concat(input);
+	  }
+
+	  try {
+	    return !isEmpty(new URL(string).hostname);
+	  } catch (e) {
+	    return false;
+	  }
+	};
+
+	var is = {
+	  nullOrUndefined: isNullOrUndefined,
+	  object: isObject$2,
+	  number: isNumber,
+	  string: isString,
+	  boolean: isBoolean,
+	  function: isFunction,
+	  array: isArray$2,
+	  weakMap: isWeakMap,
+	  nodeList: isNodeList,
+	  element: isElement,
+	  textNode: isTextNode,
+	  event: isEvent,
+	  keyboardEvent: isKeyboardEvent,
+	  cue: isCue,
+	  track: isTrack,
+	  promise: isPromise,
+	  url: isUrl,
+	  empty: isEmpty
+	};
+
+	// `Array.prototype.{ reduce, reduceRight }` methods implementation
+	var createMethod$8 = function (IS_RIGHT) {
+	  return function (that, callbackfn, argumentsLength, memo) {
+	    aFunction$3(callbackfn);
+	    var O = toObject$1(that);
+	    var self = indexedObject$1(O);
+	    var length = toLength$1(O.length);
+	    var index = IS_RIGHT ? length - 1 : 0;
+	    var i = IS_RIGHT ? -1 : 1;
+	    if (argumentsLength < 2) while (true) {
+	      if (index in self) {
+	        memo = self[index];
+	        index += i;
+	        break;
+	      }
+	      index += i;
+	      if (IS_RIGHT ? index < 0 : length <= index) {
+	        throw TypeError('Reduce of empty array with no initial value');
+	      }
+	    }
+	    for (;IS_RIGHT ? index >= 0 : length > index; index += i) if (index in self) {
+	      memo = callbackfn(memo, self[index], index, O);
+	    }
+	    return memo;
+	  };
+	};
+
+	var arrayReduce = {
+	  // `Array.prototype.reduce` method
+	  // https://tc39.github.io/ecma262/#sec-array.prototype.reduce
+	  left: createMethod$8(false),
+	  // `Array.prototype.reduceRight` method
+	  // https://tc39.github.io/ecma262/#sec-array.prototype.reduceright
+	  right: createMethod$8(true)
+	};
+
+	var $reduce = arrayReduce.left;
+
+
+
+
+
+	var STRICT_METHOD$5 = arrayMethodIsStrict$1('reduce');
+	var USES_TO_LENGTH$9 = arrayMethodUsesToLength$1('reduce', { 1: 0 });
+	// Chrome 80-82 has a critical bug
+	// https://bugs.chromium.org/p/chromium/issues/detail?id=1049982
+	var CHROME_BUG = !engineIsNode && engineV8Version$1 > 79 && engineV8Version$1 < 83;
+
+	// `Array.prototype.reduce` method
+	// https://tc39.github.io/ecma262/#sec-array.prototype.reduce
+	_export$1({ target: 'Array', proto: true, forced: !STRICT_METHOD$5 || !USES_TO_LENGTH$9 || CHROME_BUG }, {
+	  reduce: function reduce(callbackfn /* , initialValue */) {
+	    return $reduce(this, callbackfn, arguments.length, arguments.length > 1 ? arguments[1] : undefined);
+	  }
+	});
+
+	// `Object.assign` method
+	// https://tc39.github.io/ecma262/#sec-object.assign
+	_export$1({ target: 'Object', stat: true, forced: Object.assign !== objectAssign$1 }, {
+	  assign: objectAssign$1
+	});
+
+	var charAt$3 = stringMultibyte$1.charAt;
+
+	// `AdvanceStringIndex` abstract operation
+	// https://tc39.github.io/ecma262/#sec-advancestringindex
+	var advanceStringIndex$1 = function (S, index, unicode) {
+	  return index + (unicode ? charAt$3(S, index).length : 1);
+	};
+
+	var arrayPush$1 = [].push;
+	var min$7 = Math.min;
+	var MAX_UINT32$1 = 0xFFFFFFFF;
+
+	// babel-minify transpiles RegExp('x', 'y') -> /x/y and it causes SyntaxError
+	var SUPPORTS_Y$1 = !fails$1(function () { return !RegExp(MAX_UINT32$1, 'y'); });
+
+	// @@split logic
+	fixRegexpWellKnownSymbolLogic$1('split', 2, function (SPLIT, nativeSplit, maybeCallNative) {
+	  var internalSplit;
+	  if (
+	    'abbc'.split(/(b)*/)[1] == 'c' ||
+	    'test'.split(/(?:)/, -1).length != 4 ||
+	    'ab'.split(/(?:ab)*/).length != 2 ||
+	    '.'.split(/(.?)(.?)/).length != 4 ||
+	    '.'.split(/()()/).length > 1 ||
+	    ''.split(/.?/).length
+	  ) {
+	    // based on es5-shim implementation, need to rework it
+	    internalSplit = function (separator, limit) {
+	      var string = String(requireObjectCoercible$1(this));
+	      var lim = limit === undefined ? MAX_UINT32$1 : limit >>> 0;
+	      if (lim === 0) return [];
+	      if (separator === undefined) return [string];
+	      // If `separator` is not a regex, use native split
+	      if (!isRegexp$1(separator)) {
+	        return nativeSplit.call(string, separator, lim);
+	      }
+	      var output = [];
+	      var flags = (separator.ignoreCase ? 'i' : '') +
+	                  (separator.multiline ? 'm' : '') +
+	                  (separator.unicode ? 'u' : '') +
+	                  (separator.sticky ? 'y' : '');
+	      var lastLastIndex = 0;
+	      // Make `global` and avoid `lastIndex` issues by working with a copy
+	      var separatorCopy = new RegExp(separator.source, flags + 'g');
+	      var match, lastIndex, lastLength;
+	      while (match = regexpExec$1.call(separatorCopy, string)) {
+	        lastIndex = separatorCopy.lastIndex;
+	        if (lastIndex > lastLastIndex) {
+	          output.push(string.slice(lastLastIndex, match.index));
+	          if (match.length > 1 && match.index < string.length) arrayPush$1.apply(output, match.slice(1));
+	          lastLength = match[0].length;
+	          lastLastIndex = lastIndex;
+	          if (output.length >= lim) break;
+	        }
+	        if (separatorCopy.lastIndex === match.index) separatorCopy.lastIndex++; // Avoid an infinite loop
+	      }
+	      if (lastLastIndex === string.length) {
+	        if (lastLength || !separatorCopy.test('')) output.push('');
+	      } else output.push(string.slice(lastLastIndex));
+	      return output.length > lim ? output.slice(0, lim) : output;
+	    };
+	  // Chakra, V8
+	  } else if ('0'.split(undefined, 0).length) {
+	    internalSplit = function (separator, limit) {
+	      return separator === undefined && limit === 0 ? [] : nativeSplit.call(this, separator, limit);
+	    };
+	  } else internalSplit = nativeSplit;
+
+	  return [
+	    // `String.prototype.split` method
+	    // https://tc39.github.io/ecma262/#sec-string.prototype.split
+	    function split(separator, limit) {
+	      var O = requireObjectCoercible$1(this);
+	      var splitter = separator == undefined ? undefined : separator[SPLIT];
+	      return splitter !== undefined
+	        ? splitter.call(separator, O, limit)
+	        : internalSplit.call(String(O), separator, limit);
+	    },
+	    // `RegExp.prototype[@@split]` method
+	    // https://tc39.github.io/ecma262/#sec-regexp.prototype-@@split
+	    //
+	    // NOTE: This cannot be properly polyfilled in engines that don't support
+	    // the 'y' flag.
+	    function (regexp, limit) {
+	      var res = maybeCallNative(internalSplit, regexp, this, limit, internalSplit !== nativeSplit);
+	      if (res.done) return res.value;
+
+	      var rx = anObject$1(regexp);
+	      var S = String(this);
+	      var C = speciesConstructor$1(rx, RegExp);
+
+	      var unicodeMatching = rx.unicode;
+	      var flags = (rx.ignoreCase ? 'i' : '') +
+	                  (rx.multiline ? 'm' : '') +
+	                  (rx.unicode ? 'u' : '') +
+	                  (SUPPORTS_Y$1 ? 'y' : 'g');
+
+	      // ^(? + rx + ) is needed, in combination with some S slicing, to
+	      // simulate the 'y' flag.
+	      var splitter = new C(SUPPORTS_Y$1 ? rx : '^(?:' + rx.source + ')', flags);
+	      var lim = limit === undefined ? MAX_UINT32$1 : limit >>> 0;
+	      if (lim === 0) return [];
+	      if (S.length === 0) return regexpExecAbstract$1(splitter, S) === null ? [S] : [];
+	      var p = 0;
+	      var q = 0;
+	      var A = [];
+	      while (q < S.length) {
+	        splitter.lastIndex = SUPPORTS_Y$1 ? q : 0;
+	        var z = regexpExecAbstract$1(splitter, SUPPORTS_Y$1 ? S : S.slice(q));
+	        var e;
+	        if (
+	          z === null ||
+	          (e = min$7(toLength$1(splitter.lastIndex + (SUPPORTS_Y$1 ? 0 : q)), S.length)) === p
+	        ) {
+	          q = advanceStringIndex$1(S, q, unicodeMatching);
+	        } else {
+	          A.push(S.slice(p, q));
+	          if (A.length === lim) return A;
+	          for (var i = 1; i <= z.length - 1; i++) {
+	            A.push(z[i]);
+	            if (A.length === lim) return A;
+	          }
+	          q = p = e;
+	        }
+	      }
+	      A.push(S.slice(p));
+	      return A;
+	    }
+	  ];
+	}, !SUPPORTS_Y$1);
+
+	function cloneDeep(object) {
+	  return JSON.parse(JSON.stringify(object));
+	} // Get a nested value in an object
+
+	function getDeep(object, path) {
+	  return path.split('.').reduce(function (obj, key) {
+	    return obj && obj[key];
+	  }, object);
+	} // Deep extend destination object with N more objects
+
+	function extend() {
+	  var target = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+	  for (var _len = arguments.length, sources = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	    sources[_key - 1] = arguments[_key];
+	  }
+
+	  if (!sources.length) {
+	    return target;
+	  }
+
+	  var source = sources.shift();
+
+	  if (!is.object(source)) {
+	    return target;
+	  }
+
+	  Object.keys(source).forEach(function (key) {
+	    if (is.object(source[key])) {
+	      if (!Object.keys(target).includes(key)) {
+	        Object.assign(target, _defineProperty({}, key, {}));
+	      }
+
+	      extend(target[key], source[key]);
+	    } else {
+	      Object.assign(target, _defineProperty({}, key, source[key]));
+	    }
+	  });
+	  return extend.apply(void 0, [target].concat(sources));
+	}
+
+	var HAS_SPECIES_SUPPORT$3 = arrayMethodHasSpeciesSupport$1('slice');
+	var USES_TO_LENGTH$a = arrayMethodUsesToLength$1('slice', { ACCESSORS: true, 0: 0, 1: 2 });
+
+	var SPECIES$b = wellKnownSymbol$1('species');
+	var nativeSlice$1 = [].slice;
+	var max$4 = Math.max;
+
+	// `Array.prototype.slice` method
+	// https://tc39.github.io/ecma262/#sec-array.prototype.slice
+	// fallback for not array-like ES3 strings and DOM objects
+	_export$1({ target: 'Array', proto: true, forced: !HAS_SPECIES_SUPPORT$3 || !USES_TO_LENGTH$a }, {
+	  slice: function slice(start, end) {
+	    var O = toIndexedObject$1(this);
+	    var length = toLength$1(O.length);
+	    var k = toAbsoluteIndex$1(start, length);
+	    var fin = toAbsoluteIndex$1(end === undefined ? length : end, length);
+	    // inline `ArraySpeciesCreate` for usage native `Array#slice` where it's possible
+	    var Constructor, result, n;
+	    if (isArray$1(O)) {
+	      Constructor = O.constructor;
+	      // cross-realm fallback
+	      if (typeof Constructor == 'function' && (Constructor === Array || isArray$1(Constructor.prototype))) {
+	        Constructor = undefined;
+	      } else if (isObject$1(Constructor)) {
+	        Constructor = Constructor[SPECIES$b];
+	        if (Constructor === null) Constructor = undefined;
+	      }
+	      if (Constructor === Array || Constructor === undefined) {
+	        return nativeSlice$1.call(O, k, fin);
+	      }
+	    }
+	    result = new (Constructor === undefined ? Array : Constructor)(max$4(fin - k, 0));
+	    for (n = 0; k < fin; k++, n++) if (k in O) createProperty$1(result, n, O[k]);
+	    result.length = n;
+	    return result;
+	  }
+	});
+
+	// `thisNumberValue` abstract operation
+	// https://tc39.github.io/ecma262/#sec-thisnumbervalue
+	var thisNumberValue = function (value) {
+	  if (typeof value != 'number' && classofRaw$1(value) != 'Number') {
+	    throw TypeError('Incorrect invocation');
+	  }
+	  return +value;
+	};
+
+	// `String.prototype.repeat` method implementation
+	// https://tc39.github.io/ecma262/#sec-string.prototype.repeat
+	var stringRepeat = ''.repeat || function repeat(count) {
+	  var str = String(requireObjectCoercible$1(this));
+	  var result = '';
+	  var n = toInteger$1(count);
+	  if (n < 0 || n == Infinity) throw RangeError('Wrong number of repetitions');
+	  for (;n > 0; (n >>>= 1) && (str += str)) if (n & 1) result += str;
+	  return result;
+	};
+
+	var nativeToFixed = 1.0.toFixed;
+	var floor$7 = Math.floor;
+
+	var pow$2 = function (x, n, acc) {
+	  return n === 0 ? acc : n % 2 === 1 ? pow$2(x, n - 1, acc * x) : pow$2(x * x, n / 2, acc);
+	};
+
+	var log = function (x) {
+	  var n = 0;
+	  var x2 = x;
+	  while (x2 >= 4096) {
+	    n += 12;
+	    x2 /= 4096;
+	  }
+	  while (x2 >= 2) {
+	    n += 1;
+	    x2 /= 2;
+	  } return n;
+	};
+
+	var FORCED$2 = nativeToFixed && (
+	  0.00008.toFixed(3) !== '0.000' ||
+	  0.9.toFixed(0) !== '1' ||
+	  1.255.toFixed(2) !== '1.25' ||
+	  1000000000000000128.0.toFixed(0) !== '1000000000000000128'
+	) || !fails$1(function () {
+	  // V8 ~ Android 4.3-
+	  nativeToFixed.call({});
+	});
+
+	// `Number.prototype.toFixed` method
+	// https://tc39.github.io/ecma262/#sec-number.prototype.tofixed
+	_export$1({ target: 'Number', proto: true, forced: FORCED$2 }, {
+	  // eslint-disable-next-line max-statements
+	  toFixed: function toFixed(fractionDigits) {
+	    var number = thisNumberValue(this);
+	    var fractDigits = toInteger$1(fractionDigits);
+	    var data = [0, 0, 0, 0, 0, 0];
+	    var sign = '';
+	    var result = '0';
+	    var e, z, j, k;
+
+	    var multiply = function (n, c) {
+	      var index = -1;
+	      var c2 = c;
+	      while (++index < 6) {
+	        c2 += n * data[index];
+	        data[index] = c2 % 1e7;
+	        c2 = floor$7(c2 / 1e7);
+	      }
+	    };
+
+	    var divide = function (n) {
+	      var index = 6;
+	      var c = 0;
+	      while (--index >= 0) {
+	        c += data[index];
+	        data[index] = floor$7(c / n);
+	        c = (c % n) * 1e7;
+	      }
+	    };
+
+	    var dataToString = function () {
+	      var index = 6;
+	      var s = '';
+	      while (--index >= 0) {
+	        if (s !== '' || index === 0 || data[index] !== 0) {
+	          var t = String(data[index]);
+	          s = s === '' ? t : s + stringRepeat.call('0', 7 - t.length) + t;
+	        }
+	      } return s;
+	    };
+
+	    if (fractDigits < 0 || fractDigits > 20) throw RangeError('Incorrect fraction digits');
+	    // eslint-disable-next-line no-self-compare
+	    if (number != number) return 'NaN';
+	    if (number <= -1e21 || number >= 1e21) return String(number);
+	    if (number < 0) {
+	      sign = '-';
+	      number = -number;
+	    }
+	    if (number > 1e-21) {
+	      e = log(number * pow$2(2, 69, 1)) - 69;
+	      z = e < 0 ? number * pow$2(2, -e, 1) : number / pow$2(2, e, 1);
+	      z *= 0x10000000000000;
+	      e = 52 - e;
+	      if (e > 0) {
+	        multiply(0, z);
+	        j = fractDigits;
+	        while (j >= 7) {
+	          multiply(1e7, 0);
+	          j -= 7;
+	        }
+	        multiply(pow$2(10, j, 1), 0);
+	        j = e - 1;
+	        while (j >= 23) {
+	          divide(1 << 23);
+	          j -= 23;
+	        }
+	        divide(1 << j);
+	        multiply(1, 1);
+	        divide(2);
+	        result = dataToString();
+	      } else {
+	        multiply(0, z);
+	        multiply(1 << -e, 0);
+	        result = dataToString() + stringRepeat.call('0', fractDigits);
+	      }
+	    }
+	    if (fractDigits > 0) {
+	      k = result.length;
+	      result = sign + (k <= fractDigits
+	        ? '0.' + stringRepeat.call('0', fractDigits - k) + result
+	        : result.slice(0, k - fractDigits) + '.' + result.slice(k - fractDigits));
+	    } else {
+	      result = sign + result;
+	    } return result;
+	  }
+	});
+
 	var defineProperty$9 = objectDefineProperty$1.f;
+	var getOwnPropertyNames$1 = objectGetOwnPropertyNames$1.f;
+
+
+
+
+
+	var setInternalState$b = internalState$1.set;
+
+
+
+	var MATCH$4 = wellKnownSymbol$1('match');
+	var NativeRegExp = global_1$1.RegExp;
+	var RegExpPrototype$2 = NativeRegExp.prototype;
+	var re1 = /a/g;
+	var re2 = /a/g;
+
+	// "new" should create a new object, old webkit bug
+	var CORRECT_NEW = new NativeRegExp(re1) !== re1;
+
+	var UNSUPPORTED_Y$4 = regexpStickyHelpers$1.UNSUPPORTED_Y;
+
+	var FORCED$3 = descriptors$1 && isForced_1$1('RegExp', (!CORRECT_NEW || UNSUPPORTED_Y$4 || fails$1(function () {
+	  re2[MATCH$4] = false;
+	  // RegExp constructor can alter flags and IsRegExp works correct with @@match
+	  return NativeRegExp(re1) != re1 || NativeRegExp(re2) == re2 || NativeRegExp(re1, 'i') != '/a/i';
+	})));
+
+	// `RegExp` constructor
+	// https://tc39.github.io/ecma262/#sec-regexp-constructor
+	if (FORCED$3) {
+	  var RegExpWrapper = function RegExp(pattern, flags) {
+	    var thisIsRegExp = this instanceof RegExpWrapper;
+	    var patternIsRegExp = isRegexp$1(pattern);
+	    var flagsAreUndefined = flags === undefined;
+	    var sticky;
+
+	    if (!thisIsRegExp && patternIsRegExp && pattern.constructor === RegExpWrapper && flagsAreUndefined) {
+	      return pattern;
+	    }
+
+	    if (CORRECT_NEW) {
+	      if (patternIsRegExp && !flagsAreUndefined) pattern = pattern.source;
+	    } else if (pattern instanceof RegExpWrapper) {
+	      if (flagsAreUndefined) flags = regexpFlags$1.call(pattern);
+	      pattern = pattern.source;
+	    }
+
+	    if (UNSUPPORTED_Y$4) {
+	      sticky = !!flags && flags.indexOf('y') > -1;
+	      if (sticky) flags = flags.replace(/y/g, '');
+	    }
+
+	    var result = inheritIfRequired(
+	      CORRECT_NEW ? new NativeRegExp(pattern, flags) : NativeRegExp(pattern, flags),
+	      thisIsRegExp ? this : RegExpPrototype$2,
+	      RegExpWrapper
+	    );
+
+	    if (UNSUPPORTED_Y$4 && sticky) setInternalState$b(result, { sticky: sticky });
+
+	    return result;
+	  };
+	  var proxy = function (key) {
+	    key in RegExpWrapper || defineProperty$9(RegExpWrapper, key, {
+	      configurable: true,
+	      get: function () { return NativeRegExp[key]; },
+	      set: function (it) { NativeRegExp[key] = it; }
+	    });
+	  };
+	  var keys$3 = getOwnPropertyNames$1(NativeRegExp);
+	  var index = 0;
+	  while (keys$3.length > index) proxy(keys$3[index++]);
+	  RegExpPrototype$2.constructor = RegExpWrapper;
+	  RegExpWrapper.prototype = RegExpPrototype$2;
+	  redefine$1(global_1$1, 'RegExp', RegExpWrapper);
+	}
+
+	// https://tc39.github.io/ecma262/#sec-get-regexp-@@species
+	setSpecies('RegExp');
+
+	var max$5 = Math.max;
+	var min$8 = Math.min;
+	var floor$8 = Math.floor;
+	var SUBSTITUTION_SYMBOLS$1 = /\$([$&'`]|\d\d?|<[^>]*>)/g;
+	var SUBSTITUTION_SYMBOLS_NO_NAMED$1 = /\$([$&'`]|\d\d?)/g;
+
+	var maybeToString$1 = function (it) {
+	  return it === undefined ? it : String(it);
+	};
+
+	// @@replace logic
+	fixRegexpWellKnownSymbolLogic$1('replace', 2, function (REPLACE, nativeReplace, maybeCallNative, reason) {
+	  var REGEXP_REPLACE_SUBSTITUTES_UNDEFINED_CAPTURE = reason.REGEXP_REPLACE_SUBSTITUTES_UNDEFINED_CAPTURE;
+	  var REPLACE_KEEPS_$0 = reason.REPLACE_KEEPS_$0;
+	  var UNSAFE_SUBSTITUTE = REGEXP_REPLACE_SUBSTITUTES_UNDEFINED_CAPTURE ? '$' : '$0';
+
+	  return [
+	    // `String.prototype.replace` method
+	    // https://tc39.github.io/ecma262/#sec-string.prototype.replace
+	    function replace(searchValue, replaceValue) {
+	      var O = requireObjectCoercible$1(this);
+	      var replacer = searchValue == undefined ? undefined : searchValue[REPLACE];
+	      return replacer !== undefined
+	        ? replacer.call(searchValue, O, replaceValue)
+	        : nativeReplace.call(String(O), searchValue, replaceValue);
+	    },
+	    // `RegExp.prototype[@@replace]` method
+	    // https://tc39.github.io/ecma262/#sec-regexp.prototype-@@replace
+	    function (regexp, replaceValue) {
+	      if (
+	        (!REGEXP_REPLACE_SUBSTITUTES_UNDEFINED_CAPTURE && REPLACE_KEEPS_$0) ||
+	        (typeof replaceValue === 'string' && replaceValue.indexOf(UNSAFE_SUBSTITUTE) === -1)
+	      ) {
+	        var res = maybeCallNative(nativeReplace, regexp, this, replaceValue);
+	        if (res.done) return res.value;
+	      }
+
+	      var rx = anObject$1(regexp);
+	      var S = String(this);
+
+	      var functionalReplace = typeof replaceValue === 'function';
+	      if (!functionalReplace) replaceValue = String(replaceValue);
+
+	      var global = rx.global;
+	      if (global) {
+	        var fullUnicode = rx.unicode;
+	        rx.lastIndex = 0;
+	      }
+	      var results = [];
+	      while (true) {
+	        var result = regexpExecAbstract$1(rx, S);
+	        if (result === null) break;
+
+	        results.push(result);
+	        if (!global) break;
+
+	        var matchStr = String(result[0]);
+	        if (matchStr === '') rx.lastIndex = advanceStringIndex$1(S, toLength$1(rx.lastIndex), fullUnicode);
+	      }
+
+	      var accumulatedResult = '';
+	      var nextSourcePosition = 0;
+	      for (var i = 0; i < results.length; i++) {
+	        result = results[i];
+
+	        var matched = String(result[0]);
+	        var position = max$5(min$8(toInteger$1(result.index), S.length), 0);
+	        var captures = [];
+	        // NOTE: This is equivalent to
+	        //   captures = result.slice(1).map(maybeToString)
+	        // but for some reason `nativeSlice.call(result, 1, result.length)` (called in
+	        // the slice polyfill when slicing native arrays) "doesn't work" in safari 9 and
+	        // causes a crash (https://pastebin.com/N21QzeQA) when trying to debug it.
+	        for (var j = 1; j < result.length; j++) captures.push(maybeToString$1(result[j]));
+	        var namedCaptures = result.groups;
+	        if (functionalReplace) {
+	          var replacerArgs = [matched].concat(captures, position, S);
+	          if (namedCaptures !== undefined) replacerArgs.push(namedCaptures);
+	          var replacement = String(replaceValue.apply(undefined, replacerArgs));
+	        } else {
+	          replacement = getSubstitution(matched, S, position, captures, namedCaptures, replaceValue);
+	        }
+	        if (position >= nextSourcePosition) {
+	          accumulatedResult += S.slice(nextSourcePosition, position) + replacement;
+	          nextSourcePosition = position + matched.length;
+	        }
+	      }
+	      return accumulatedResult + S.slice(nextSourcePosition);
+	    }
+	  ];
+
+	  // https://tc39.github.io/ecma262/#sec-getsubstitution
+	  function getSubstitution(matched, str, position, captures, namedCaptures, replacement) {
+	    var tailPos = position + matched.length;
+	    var m = captures.length;
+	    var symbols = SUBSTITUTION_SYMBOLS_NO_NAMED$1;
+	    if (namedCaptures !== undefined) {
+	      namedCaptures = toObject$1(namedCaptures);
+	      symbols = SUBSTITUTION_SYMBOLS$1;
+	    }
+	    return nativeReplace.call(replacement, symbols, function (match, ch) {
+	      var capture;
+	      switch (ch.charAt(0)) {
+	        case '$': return '$';
+	        case '&': return matched;
+	        case '`': return str.slice(0, position);
+	        case "'": return str.slice(tailPos);
+	        case '<':
+	          capture = namedCaptures[ch.slice(1, -1)];
+	          break;
+	        default: // \d\d?
+	          var n = +ch;
+	          if (n === 0) return match;
+	          if (n > m) {
+	            var f = floor$8(n / 10);
+	            if (f === 0) return match;
+	            if (f <= m) return captures[f - 1] === undefined ? ch.charAt(1) : captures[f - 1] + ch.charAt(1);
+	            return match;
+	          }
+	          capture = captures[n - 1];
+	      }
+	      return capture === undefined ? '' : capture;
+	    });
+	  }
+	});
+
+	function getPercentage(current, max) {
+	  if (current === 0 || max === 0 || Number.isNaN(current) || Number.isNaN(max)) {
+	    return 0;
+	  }
+
+	  return (current / max * 100).toFixed(2);
+	} // Replace all occurances of a string in a string
+
+	var replaceAll = function replaceAll() {
+	  var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+	  var find = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+	  var replace = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+	  return input.replace(new RegExp(find.toString().replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1'), 'g'), replace.toString());
+	}; // Convert to title case
+
+	var toTitleCase = function toTitleCase() {
+	  var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+	  return input.toString().replace(/\w\S*/g, function (text) {
+	    return text.charAt(0).toUpperCase() + text.substr(1).toLowerCase();
+	  });
+	}; // Convert string to pascalCase
+
+	function toPascalCase() {
+	  var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+	  var string = input.toString(); // Convert kebab case
+
+	  string = replaceAll(string, '-', ' '); // Convert snake case
+
+	  string = replaceAll(string, '_', ' '); // Convert to title case
+
+	  string = toTitleCase(string); // Convert to pascal case
+
+	  return replaceAll(string, ' ', '');
+	} // Convert string to pascalCase
+
+	function toCamelCase() {
+	  var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+	  var string = input.toString(); // Convert to pascal case
+
+	  string = toPascalCase(string); // Convert first character to lowercase
+
+	  return string.charAt(0).toLowerCase() + string.slice(1);
+	} // Remove HTML from a string
+
+	var resources = {
+	  pip: 'PIP',
+	  airplay: 'AirPlay',
+	  html5: 'HTML5',
+	  vimeo: 'Vimeo',
+	  youtube: 'YouTube'
+	};
+	var i18n = {
+	  get: function get() {
+	    var key = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+	    var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+	    if (is.empty(key) || is.empty(config)) {
+	      return '';
+	    }
+
+	    var string = getDeep(config.i18n, key);
+
+	    if (is.empty(string)) {
+	      if (Object.keys(resources).includes(key)) {
+	        return resources[key];
+	      }
+
+	      return '';
+	    }
+
+	    var replace = {
+	      '{seektime}': config.seekTime,
+	      '{title}': config.title
+	    };
+	    Object.entries(replace).forEach(function (_ref) {
+	      var _ref2 = _slicedToArray(_ref, 2),
+	          k = _ref2[0],
+	          v = _ref2[1];
+
+	      string = replaceAll(string, k, v);
+	    });
+	    return string;
+	  }
+	};
+
+	// ==========================================================================
+	var captions = {
+	  setup: function setup() {
+	    return undefined;
+	  },
+	  update: function update() {
+	    throw new Error('captions#update is removed!');
+	  },
+	  toggle: function toggle() {
+	    throw new Error('captions#toggle is removed!');
+	  },
+	  set: function set() {
+	    throw new Error('captions#set is removed!');
+	  },
+	  setLanguage: function setLanguage() {
+	    throw new Error('captions#setLanguage is removed!');
+	  },
+	  getTracks: function getTracks() {
+	    throw new Error('captions#getTracks is removed!');
+	  },
+	  findTrack: function findTrack() {
+	    throw new Error('captions#findTrack is removed!');
+	  },
+	  getCurrentTrack: function getCurrentTrack() {
+	    throw new Error('captions#getCurrentTrack is removed!');
+	  },
+	  getLabel: function getLabel() {
+	    return i18n.get('disabled', this.config);
+	  },
+	  updateCues: function updateCues() {
+	    throw new Error('captions#updateCues is removed!');
+	  }
+	};
+
+	// ==========================================================================
+	// Plyr default config
+	// ==========================================================================
+	var defaults = {
+	  // Disable
+	  enabled: true,
+	  // Custom media title
+	  title: '',
+	  // Logging to console
+	  debug: false,
+	  // Auto play (if supported)
+	  autoplay: false,
+	  // Only allow one media playing at once (vimeo only)
+	  autopause: true,
+	  // Allow inline playback on iOS (this effects YouTube/Vimeo - HTML5 requires the attribute present)
+	  // TODO: Remove iosNative fullscreen option in favour of this (logic needs work)
+	  playsinline: true,
+	  // Default time to skip when rewind/fast forward
+	  seekTime: 10,
+	  // Default volume
+	  volume: 1,
+	  muted: false,
+	  // Pass a custom duration
+	  duration: null,
+	  // Display the media duration on load in the current time position
+	  // If you have opted to display both duration and currentTime, this is ignored
+	  displayDuration: true,
+	  // Invert the current time to be a countdown
+	  invertTime: true,
+	  // Clicking the currentTime inverts it's value to show time left rather than elapsed
+	  toggleInvert: true,
+	  // Force an aspect ratio
+	  // The format must be `'w:h'` (e.g. `'16:9'`)
+	  ratio: null,
+	  // Click video container to play/pause
+	  clickToPlay: true,
+	  // Auto hide the controls
+	  hideControls: true,
+	  // Reset to start when playback ended
+	  resetOnEnd: false,
+	  // Disable the standard context menu
+	  disableContextMenu: true,
+	  // Sprite (for icons)
+	  loadSprite: true,
+	  iconPrefix: 'plyr',
+	  iconUrl: 'https://cdn.plyr.io/3.6.3/plyr.svg',
+	  // Blank video (used to prevent errors on source change)
+	  blankVideo: 'https://cdn.plyr.io/static/blank.mp4',
+	  // Quality default
+	  quality: {
+	    default: 576,
+	    // The options to display in the UI, if available for the source media
+	    options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240],
+	    forced: false,
+	    onChange: null
+	  },
+	  // Set loops
+	  loop: {
+	    active: false // start: null,
+	    // end: null,
+
+	  },
+	  // Speed default and options to display
+	  speed: {
+	    selected: 1,
+	    // The options to display in the UI, if available for the source media (e.g. Vimeo and YouTube only support 0.5x-4x)
+	    options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 4]
+	  },
+	  // Keyboard shortcut settings
+	  keyboard: {
+	    focused: true,
+	    global: false
+	  },
+	  // Display tooltips
+	  tooltips: {
+	    controls: false,
+	    seek: true
+	  },
+	  // Captions settings
+	  captions: {
+	    active: false,
+	    language: 'auto',
+	    // Listen to new tracks added after Plyr is initialized.
+	    // This is needed for streaming captions, but may result in unselectable options
+	    update: false
+	  },
+	  // Fullscreen settings
+	  fullscreen: {
+	    enabled: true,
+	    // Allow fullscreen?
+	    fallback: true,
+	    // Fallback using full viewport/window
+	    iosNative: false,
+	    // Use the native fullscreen in iOS (disables custom controls)
+	    dblclick: true // Toggle fullscreen on double click
+	    // Selector for the fullscreen container so contextual / non-player content can remain visible in fullscreen mode
+	    // Non-ancestors of the player element will be ignored
+	    // container: null, // defaults to the player element
+
+	  },
+	  // Local storage
+	  storage: {
+	    enabled: true,
+	    key: 'ggs-plyr'
+	  },
+	  // Default controls
+	  controls: ['play-large', // 'restart',
+	  // 'rewind',
+	  'play', // 'fast-forward',
+	  'progress', 'current-time', // 'duration',
+	  'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', // 'download',
+	  'fullscreen'],
+	  settings: ['captions', 'quality', 'speed'],
+	  // Localisation
+	  i18n: {
+	    restart: 'Restart',
+	    rewind: 'Rewind {seektime}s',
+	    play: 'Play',
+	    pause: 'Pause',
+	    fastForward: 'Forward {seektime}s',
+	    seek: 'Seek',
+	    seekLabel: '{currentTime} of {duration}',
+	    played: 'Played',
+	    buffered: 'Buffered',
+	    currentTime: 'Current time',
+	    duration: 'Duration',
+	    volume: 'Volume',
+	    mute: 'Mute',
+	    unmute: 'Unmute',
+	    enableCaptions: 'Enable captions',
+	    disableCaptions: 'Disable captions',
+	    download: 'Download',
+	    enterFullscreen: 'Enter fullscreen',
+	    exitFullscreen: 'Exit fullscreen',
+	    frameTitle: 'Player for {title}',
+	    captions: 'Captions',
+	    settings: 'Settings',
+	    pip: 'PIP',
+	    menuBack: 'Go back to previous menu',
+	    speed: 'Speed',
+	    normal: 'Normal',
+	    quality: 'Quality',
+	    loop: 'Loop',
+	    start: 'Start',
+	    end: 'End',
+	    all: 'All',
+	    reset: 'Reset',
+	    disabled: 'Disabled',
+	    enabled: 'Enabled',
+	    advertisement: 'Ad',
+	    qualityBadge: {
+	      2160: '4K',
+	      1440: 'HD',
+	      1080: 'HD',
+	      720: 'HD',
+	      576: 'SD',
+	      480: 'SD'
+	    }
+	  },
+	  // URLs
+	  urls: {
+	    download: null,
+	    vimeo: {
+	      sdk: 'https://player.vimeo.com/api/player.js',
+	      iframe: 'https://player.vimeo.com/video/{0}?{1}',
+	      api: 'https://vimeo.com/api/oembed.json?url={0}'
+	    },
+	    youtube: {
+	      sdk: 'https://www.youtube.com/iframe_api',
+	      api: 'https://noembed.com/embed?url=https://www.youtube.com/watch?v={0}'
+	    },
+	    googleIMA: {
+	      sdk: 'https://imasdk.googleapis.com/js/sdkloader/ima3.js'
+	    }
+	  },
+	  // Custom control listeners
+	  listeners: {
+	    seek: null,
+	    play: null,
+	    pause: null,
+	    restart: null,
+	    rewind: null,
+	    fastForward: null,
+	    mute: null,
+	    volume: null,
+	    captions: null,
+	    download: null,
+	    fullscreen: null,
+	    pip: null,
+	    airplay: null,
+	    speed: null,
+	    quality: null,
+	    loop: null,
+	    language: null
+	  },
+	  // Events to watch and bubble
+	  events: [// Events to watch on HTML5 media elements and bubble
+	  // https://developer.mozilla.org/en/docs/Web/Guide/Events/Media_events
+	  'ended', 'progress', 'stalled', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadstart', 'loadeddata', 'loadedmetadata', 'timeupdate', 'volumechange', 'play', 'pause', 'error', 'seeking', 'seeked', 'emptied', 'ratechange', 'cuechange', // Custom events
+	  'download', 'enterfullscreen', 'exitfullscreen', 'captionsenabled', 'captionsdisabled', 'languagechange', 'controlshidden', 'controlsshown', 'ready', // YouTube
+	  'statechange', // Quality
+	  'qualitychange', // Ads
+	  'adsloaded', 'adscontentpause', 'adscontentresume', 'adstarted', 'adsmidpoint', 'adscomplete', 'adsallcomplete', 'adsimpression', 'adsclick'],
+	  // Selectors
+	  // Change these to match your template if using custom HTML
+	  selectors: {
+	    editable: 'input, textarea, select, [contenteditable]',
+	    container: '.ggs-plyr',
+	    controls: {
+	      container: null,
+	      wrapper: '.ggs-plyr__controls'
+	    },
+	    labels: '[data-plyr]',
+	    buttons: {
+	      play: '[data-plyr="play"]',
+	      pause: '[data-plyr="pause"]',
+	      restart: '[data-plyr="restart"]',
+	      rewind: '[data-plyr="rewind"]',
+	      fastForward: '[data-plyr="fast-forward"]',
+	      mute: '[data-plyr="mute"]',
+	      captions: '[data-plyr="captions"]',
+	      download: '[data-plyr="download"]',
+	      fullscreen: '[data-plyr="fullscreen"]',
+	      pip: '[data-plyr="pip"]',
+	      airplay: '[data-plyr="airplay"]',
+	      settings: '[data-plyr="settings"]',
+	      loop: '[data-plyr="loop"]'
+	    },
+	    inputs: {
+	      seek: '[data-plyr="seek"]',
+	      volume: '[data-plyr="volume"]',
+	      speed: '[data-plyr="speed"]',
+	      language: '[data-plyr="language"]',
+	      quality: '[data-plyr="quality"]'
+	    },
+	    display: {
+	      currentTime: '.ggs-plyr__time--current',
+	      duration: '.ggs-plyr__time--duration',
+	      buffer: '.ggs-plyr__progress__buffer',
+	      loop: '.ggs-plyr__progress__loop',
+	      // Used later
+	      volume: '.ggs-plyr__volume--display'
+	    },
+	    progress: '.ggs-plyr__progress',
+	    captions: '.ggs-plyr__captions',
+	    caption: '.ggs-plyr__caption'
+	  },
+	  // Class hooks added to the player in different states
+	  classNames: {
+	    type: 'ggs-plyr--{0}',
+	    provider: 'ggs-plyr--{0}',
+	    video: 'ggs-plyr__video-wrapper',
+	    embed: 'ggs-plyr__video-embed',
+	    videoFixedRatio: 'ggs-plyr__video-wrapper--fixed-ratio',
+	    embedContainer: 'ggs-plyr__video-embed__container',
+	    poster: 'ggs-plyr__poster',
+	    posterEnabled: 'ggs-plyr__poster-enabled',
+	    ads: 'ggs-plyr__ads',
+	    control: 'ggs-plyr__control',
+	    controlPressed: 'ggs-plyr__control--pressed',
+	    playing: 'ggs-plyr--playing',
+	    paused: 'ggs-plyr--paused',
+	    stopped: 'ggs-plyr--stopped',
+	    loading: 'ggs-plyr--loading',
+	    hover: 'ggs-plyr--hover',
+	    tooltip: 'ggs-plyr__tooltip',
+	    cues: 'ggs-plyr__cues',
+	    hidden: 'ggs-plyr__sr-only',
+	    hideControls: 'ggs-plyr--hide-controls',
+	    isIos: 'ggs-plyr--is-ios',
+	    isTouch: 'ggs-plyr--is-touch',
+	    uiSupported: 'ggs-plyr--full-ui',
+	    noTransition: 'ggs-plyr--no-transition',
+	    display: {
+	      time: 'ggs-plyr__time'
+	    },
+	    menu: {
+	      value: 'ggs-plyr__menu__value',
+	      badge: 'ggs-plyr__badge',
+	      open: 'ggs-plyr--menu-open'
+	    },
+	    captions: {
+	      enabled: 'ggs-plyr--captions-enabled',
+	      active: 'ggs-plyr--captions-active'
+	    },
+	    fullscreen: {
+	      enabled: 'ggs-plyr--fullscreen-enabled',
+	      fallback: 'ggs-plyr--fullscreen-fallback'
+	    },
+	    pip: {
+	      supported: 'ggs-plyr--pip-supported',
+	      active: 'ggs-plyr--pip-active'
+	    },
+	    airplay: {
+	      supported: 'ggs-plyr--airplay-supported',
+	      active: 'ggs-plyr--airplay-active'
+	    },
+	    tabFocus: 'ggs-plyr__tab-focus',
+	    previewThumbnails: {
+	      // Tooltip thumbs
+	      thumbContainer: 'ggs-plyr__preview-thumb',
+	      thumbContainerShown: 'ggs-plyr__preview-thumb--is-shown',
+	      imageContainer: 'ggs-plyr__preview-thumb__image-container',
+	      timeContainer: 'ggs-plyr__preview-thumb__time-container',
+	      // Scrubbing
+	      scrubbingContainer: 'ggs-plyr__preview-scrubbing',
+	      scrubbingContainerShown: 'ggs-plyr__preview-scrubbing--is-shown'
+	    }
+	  },
+	  // Embed attributes
+	  attributes: {
+	    embed: {
+	      provider: 'data-plyr-provider',
+	      id: 'data-plyr-embed-id'
+	    }
+	  },
+	  // Advertisements plugin
+	  // Register for an account here: http://vi.ai/publisher-video-monetization/?aid=plyrio
+	  ads: {
+	    enabled: false,
+	    publisherId: '',
+	    tagUrl: ''
+	  },
+	  // Preview Thumbnails plugin
+	  previewThumbnails: {
+	    enabled: false,
+	    src: ''
+	  },
+	  // Vimeo plugin
+	  vimeo: {
+	    byline: false,
+	    portrait: false,
+	    title: false,
+	    speed: true,
+	    transparent: false,
+	    // Custom settings from Plyr
+	    customControls: true,
+	    referrerPolicy: null,
+	    // https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement/referrerPolicy
+	    // Whether the owner of the video has a Pro or Business account
+	    // (which allows us to properly hide controls without CSS hacks, etc)
+	    premium: false
+	  },
+	  // YouTube plugin
+	  youtube: {
+	    rel: 0,
+	    // No related vids
+	    showinfo: 0,
+	    // Hide info
+	    iv_load_policy: 3,
+	    // Hide annotations
+	    modestbranding: 1,
+	    // Hide logos as much as possible (they still show one in the corner when paused)
+	    // Custom settings from Plyr
+	    customControls: true,
+	    noCookie: false // Whether to use an alternative version of YouTube without cookies
+
+	  }
+	};
+
+	// ==========================================================================
+	// Plyr states
+	// ==========================================================================
+	var pip = {
+	  active: 'picture-in-picture',
+	  inactive: 'inline'
+	};
+
+	// ==========================================================================
+	// Plyr supported types and providers
+	// ==========================================================================
+	var providers = {
+	  html5: 'html5',
+	  youtube: 'youtube',
+	  vimeo: 'vimeo'
+	};
+	var types = {
+	  audio: 'audio',
+	  video: 'video'
+	};
+	/**
+	 * Get provider by URL
+	 * @param {String} url
+	 */
+
+	function getProviderByUrl(url) {
+	  // YouTube
+	  if (/^(https?:\/\/)?(www\.)?(youtube\.com|youtube-nocookie\.com|youtu\.?be)\/.+$/.test(url)) {
+	    return providers.youtube;
+	  } // Vimeo
+
+
+	  if (/^https?:\/\/player.vimeo.com\/video\/\d{0,9}(?=\b|\/)/.test(url)) {
+	    return providers.vimeo;
+	  }
+
+	  return null;
+	}
+
+	// ==========================================================================
+	// Console wrapper
+	// ==========================================================================
+	var noop = function noop() {};
+
+	var Console = /*#__PURE__*/function () {
+	  function Console() {
+	    var enabled = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+	    _classCallCheck(this, Console);
+
+	    this.enabled = window.console && enabled;
+
+	    if (this.enabled) {
+	      this.log('Debugging enabled');
+	    }
+	  }
+
+	  _createClass(Console, [{
+	    key: "log",
+	    get: function get() {
+	      // eslint-disable-next-line no-console
+	      return this.enabled ? Function.prototype.bind.call(console.log, console) : noop;
+	    }
+	  }, {
+	    key: "warn",
+	    get: function get() {
+	      // eslint-disable-next-line no-console
+	      return this.enabled ? Function.prototype.bind.call(console.warn, console) : noop;
+	    }
+	  }, {
+	    key: "error",
+	    get: function get() {
+	      // eslint-disable-next-line no-console
+	      return this.enabled ? Function.prototype.bind.call(console.error, console) : noop;
+	    }
+	  }]);
+
+	  return Console;
+	}();
+
+	var $indexOf$1 = arrayIncludes$1.indexOf;
+
+
+
+	var nativeIndexOf$1 = [].indexOf;
+
+	var NEGATIVE_ZERO$1 = !!nativeIndexOf$1 && 1 / [1].indexOf(1, -0) < 0;
+	var STRICT_METHOD$6 = arrayMethodIsStrict$1('indexOf');
+	var USES_TO_LENGTH$b = arrayMethodUsesToLength$1('indexOf', { ACCESSORS: true, 1: 0 });
+
+	// `Array.prototype.indexOf` method
+	// https://tc39.github.io/ecma262/#sec-array.prototype.indexof
+	_export$1({ target: 'Array', proto: true, forced: NEGATIVE_ZERO$1 || !STRICT_METHOD$6 || !USES_TO_LENGTH$b }, {
+	  indexOf: function indexOf(searchElement /* , fromIndex = 0 */) {
+	    return NEGATIVE_ZERO$1
+	      // convert -0 to +0
+	      ? nativeIndexOf$1.apply(this, arguments) || 0
+	      : $indexOf$1(this, searchElement, arguments.length > 1 ? arguments[1] : undefined);
+	  }
+	});
+
+	var $some = arrayIteration$1.some;
+
+
+
+	var STRICT_METHOD$7 = arrayMethodIsStrict$1('some');
+	var USES_TO_LENGTH$c = arrayMethodUsesToLength$1('some');
+
+	// `Array.prototype.some` method
+	// https://tc39.github.io/ecma262/#sec-array.prototype.some
+	_export$1({ target: 'Array', proto: true, forced: !STRICT_METHOD$7 || !USES_TO_LENGTH$c }, {
+	  some: function some(callbackfn /* , thisArg */) {
+	    return $some(this, callbackfn, arguments.length > 1 ? arguments[1] : undefined);
+	  }
+	});
+
+	var $values = objectToArray.values;
+
+	// `Object.values` method
+	// https://tc39.github.io/ecma262/#sec-object.values
+	_export$1({ target: 'Object', stat: true }, {
+	  values: function values(O) {
+	    return $values(O);
+	  }
+	});
+
+	var non = '\u200B\u0085\u180E';
+
+	// check that a method works with the correct list
+	// of whitespaces and has a correct name
+	var stringTrimForced = function (METHOD_NAME) {
+	  return fails$1(function () {
+	    return !!whitespaces[METHOD_NAME]() || non[METHOD_NAME]() != non || whitespaces[METHOD_NAME].name !== METHOD_NAME;
+	  });
+	};
+
+	var $trim = stringTrim.trim;
+
+
+	// `String.prototype.trim` method
+	// https://tc39.github.io/ecma262/#sec-string.prototype.trim
+	_export$1({ target: 'String', proto: true, forced: stringTrimForced('trim') }, {
+	  trim: function trim() {
+	    return $trim(this);
+	  }
+	});
+
+	var f$e = wellKnownSymbol$1;
+
+	var wellKnownSymbolWrapped$1 = {
+		f: f$e
+	};
+
+	var defineProperty$a = objectDefineProperty$1.f;
 
 	var defineWellKnownSymbol$1 = function (NAME) {
 	  var Symbol = path$1.Symbol || (path$1.Symbol = {});
-	  if (!has$2(Symbol, NAME)) defineProperty$9(Symbol, NAME, {
+	  if (!has$2(Symbol, NAME)) defineProperty$a(Symbol, NAME, {
 	    value: wellKnownSymbolWrapped$1.f(NAME)
 	  });
 	};
@@ -9902,8 +10953,8 @@ typeof navigator === "object" && (function () {
 	var SYMBOL$1 = 'Symbol';
 	var PROTOTYPE$3 = 'prototype';
 	var TO_PRIMITIVE$1 = wellKnownSymbol$1('toPrimitive');
-	var setInternalState$a = internalState$1.set;
-	var getInternalState$5 = internalState$1.getterFor(SYMBOL$1);
+	var setInternalState$c = internalState$1.set;
+	var getInternalState$6 = internalState$1.getterFor(SYMBOL$1);
 	var ObjectPrototype$3 = Object[PROTOTYPE$3];
 	var $Symbol$1 = global_1$1.Symbol;
 	var $stringify$1 = getBuiltIn$1('JSON', 'stringify');
@@ -9936,7 +10987,7 @@ typeof navigator === "object" && (function () {
 
 	var wrap$1 = function (tag, description) {
 	  var symbol = AllSymbols$1[tag] = objectCreate$1($Symbol$1[PROTOTYPE$3]);
-	  setInternalState$a(symbol, {
+	  setInternalState$c(symbol, {
 	    type: SYMBOL$1,
 	    tag: tag,
 	    description: description
@@ -10037,7 +11088,7 @@ typeof navigator === "object" && (function () {
 	  };
 
 	  redefine$1($Symbol$1[PROTOTYPE$3], 'toString', function toString() {
-	    return getInternalState$5(this).tag;
+	    return getInternalState$6(this).tag;
 	  });
 
 	  redefine$1($Symbol$1, 'withoutSetter', function (description) {
@@ -10059,7 +11110,7 @@ typeof navigator === "object" && (function () {
 	    nativeDefineProperty$3($Symbol$1[PROTOTYPE$3], 'description', {
 	      configurable: true,
 	      get: function description() {
-	        return getInternalState$5(this).description;
+	        return getInternalState$6(this).description;
 	      }
 	    });
 	    {
@@ -10172,24 +11223,15 @@ typeof navigator === "object" && (function () {
 
 	hiddenKeys$2[HIDDEN$1] = true;
 
-	// `Number.isNaN` method
-	// https://tc39.github.io/ecma262/#sec-number.isnan
-	_export$1({ target: 'Number', stat: true }, {
-	  isNaN: function isNaN(number) {
-	    // eslint-disable-next-line no-self-compare
-	    return number != number;
-	  }
-	});
-
 	var nativeGetOwnPropertyDescriptor$4 = objectGetOwnPropertyDescriptor$1.f;
 
 
 	var FAILS_ON_PRIMITIVES$3 = fails$1(function () { nativeGetOwnPropertyDescriptor$4(1); });
-	var FORCED$2 = !descriptors$1 || FAILS_ON_PRIMITIVES$3;
+	var FORCED$4 = !descriptors$1 || FAILS_ON_PRIMITIVES$3;
 
 	// `Object.getOwnPropertyDescriptor` method
 	// https://tc39.github.io/ecma262/#sec-object.getownpropertydescriptor
-	_export$1({ target: 'Object', stat: true, forced: FORCED$2, sham: !descriptors$1 }, {
+	_export$1({ target: 'Object', stat: true, forced: FORCED$4, sham: !descriptors$1 }, {
 	  getOwnPropertyDescriptor: function getOwnPropertyDescriptor(it, key) {
 	    return nativeGetOwnPropertyDescriptor$4(toIndexedObject$1(it), key);
 	  }
@@ -10321,57 +11363,57 @@ typeof navigator === "object" && (function () {
 	  }
 	}
 
-	var getConstructor = function getConstructor(e) {
+	var getConstructor$1 = function getConstructor(e) {
 	  return null != e ? e.constructor : null;
 	},
-	    instanceOf = function instanceOf(e, t) {
+	    instanceOf$1 = function instanceOf(e, t) {
 	  return !!(e && t && e instanceof t);
 	},
-	    isNullOrUndefined = function isNullOrUndefined(e) {
+	    isNullOrUndefined$1 = function isNullOrUndefined(e) {
 	  return null == e;
 	},
-	    isObject$2 = function isObject(e) {
-	  return getConstructor(e) === Object;
+	    isObject$3 = function isObject(e) {
+	  return getConstructor$1(e) === Object;
 	},
-	    isNumber = function isNumber(e) {
-	  return getConstructor(e) === Number && !Number.isNaN(e);
+	    isNumber$1 = function isNumber(e) {
+	  return getConstructor$1(e) === Number && !Number.isNaN(e);
 	},
-	    isString = function isString(e) {
-	  return getConstructor(e) === String;
+	    isString$1 = function isString(e) {
+	  return getConstructor$1(e) === String;
 	},
-	    isBoolean = function isBoolean(e) {
-	  return getConstructor(e) === Boolean;
+	    isBoolean$1 = function isBoolean(e) {
+	  return getConstructor$1(e) === Boolean;
 	},
-	    isFunction = function isFunction(e) {
-	  return getConstructor(e) === Function;
+	    isFunction$1 = function isFunction(e) {
+	  return getConstructor$1(e) === Function;
 	},
-	    isArray$2 = function isArray(e) {
+	    isArray$3 = function isArray(e) {
 	  return Array.isArray(e);
 	},
-	    isNodeList = function isNodeList(e) {
-	  return instanceOf(e, NodeList);
+	    isNodeList$1 = function isNodeList(e) {
+	  return instanceOf$1(e, NodeList);
 	},
-	    isElement = function isElement(e) {
-	  return instanceOf(e, Element);
+	    isElement$1 = function isElement(e) {
+	  return instanceOf$1(e, Element);
 	},
-	    isEvent = function isEvent(e) {
-	  return instanceOf(e, Event);
+	    isEvent$1 = function isEvent(e) {
+	  return instanceOf$1(e, Event);
 	},
-	    isEmpty = function isEmpty(e) {
-	  return isNullOrUndefined(e) || (isString(e) || isArray$2(e) || isNodeList(e)) && !e.length || isObject$2(e) && !Object.keys(e).length;
+	    isEmpty$1 = function isEmpty(e) {
+	  return isNullOrUndefined$1(e) || (isString$1(e) || isArray$3(e) || isNodeList$1(e)) && !e.length || isObject$3(e) && !Object.keys(e).length;
 	},
-	    is = {
-	  nullOrUndefined: isNullOrUndefined,
-	  object: isObject$2,
-	  number: isNumber,
-	  string: isString,
-	  boolean: isBoolean,
-	  function: isFunction,
-	  array: isArray$2,
-	  nodeList: isNodeList,
-	  element: isElement,
-	  event: isEvent,
-	  empty: isEmpty
+	    is$1 = {
+	  nullOrUndefined: isNullOrUndefined$1,
+	  object: isObject$3,
+	  number: isNumber$1,
+	  string: isString$1,
+	  boolean: isBoolean$1,
+	  function: isFunction$1,
+	  array: isArray$3,
+	  nodeList: isNodeList$1,
+	  element: isElement$1,
+	  event: isEvent$1,
+	  empty: isEmpty$1
 	};
 
 	function getDecimalPlaces(e) {
@@ -10390,7 +11432,7 @@ typeof navigator === "object" && (function () {
 
 	var RangeTouch = function () {
 	  function e(t, n) {
-	    _classCallCheck$1(this, e), is.element(t) ? this.element = t : is.string(t) && (this.element = document.querySelector(t)), is.element(this.element) && is.empty(this.element.rangeTouch) && (this.config = _objectSpread2$1({}, defaults$1, {}, n), this.init());
+	    _classCallCheck$1(this, e), is$1.element(t) ? this.element = t : is$1.string(t) && (this.element = document.querySelector(t)), is$1.element(this.element) && is$1.empty(this.element.rangeTouch) && (this.config = _objectSpread2$1({}, defaults$1, {}, n), this.init());
 	  }
 
 	  return _createClass$1(e, [{
@@ -10417,7 +11459,7 @@ typeof navigator === "object" && (function () {
 	  }, {
 	    key: "get",
 	    value: function value(t) {
-	      if (!e.enabled || !is.event(t)) return null;
+	      if (!e.enabled || !is$1.event(t)) return null;
 	      var n,
 	          r = t.target,
 	          i = t.changedTouches[0],
@@ -10431,22 +11473,22 @@ typeof navigator === "object" && (function () {
 	  }, {
 	    key: "set",
 	    value: function value(t) {
-	      e.enabled && is.event(t) && !t.target.disabled && (t.preventDefault(), t.target.value = this.get(t), trigger(t.target, "touchend" === t.type ? "change" : "input"));
+	      e.enabled && is$1.event(t) && !t.target.disabled && (t.preventDefault(), t.target.value = this.get(t), trigger(t.target, "touchend" === t.type ? "change" : "input"));
 	    }
 	  }], [{
 	    key: "setup",
 	    value: function value(t) {
 	      var n = 1 < arguments.length && void 0 !== arguments[1] ? arguments[1] : {},
 	          r = null;
-	      if (is.empty(t) || is.string(t) ? r = Array.from(document.querySelectorAll(is.string(t) ? t : 'input[type="range"]')) : is.element(t) ? r = [t] : is.nodeList(t) ? r = Array.from(t) : is.array(t) && (r = t.filter(is.element)), is.empty(r)) return null;
+	      if (is$1.empty(t) || is$1.string(t) ? r = Array.from(document.querySelectorAll(is$1.string(t) ? t : 'input[type="range"]')) : is$1.element(t) ? r = [t] : is$1.nodeList(t) ? r = Array.from(t) : is$1.array(t) && (r = t.filter(is$1.element)), is$1.empty(r)) return null;
 
 	      var i = _objectSpread2$1({}, defaults$1, {}, n);
 
-	      if (is.string(t) && i.watch) {
+	      if (is$1.string(t) && i.watch) {
 	        var o = new MutationObserver(function (n) {
 	          Array.from(n).forEach(function (n) {
 	            Array.from(n.addedNodes).forEach(function (n) {
-	              is.element(n) && matches(n, t) && new e(n, i);
+	              is$1.element(n) && matches(n, t) && new e(n, i);
 	            });
 	          });
 	        });
@@ -10468,767 +11510,6 @@ typeof navigator === "object" && (function () {
 	  }]), e;
 	}();
 
-	var nativePromiseConstructor = global_1$1.Promise;
-
-	var SPECIES$9 = wellKnownSymbol$1('species');
-
-	var setSpecies = function (CONSTRUCTOR_NAME) {
-	  var Constructor = getBuiltIn$1(CONSTRUCTOR_NAME);
-	  var defineProperty = objectDefineProperty$1.f;
-
-	  if (descriptors$1 && Constructor && !Constructor[SPECIES$9]) {
-	    defineProperty(Constructor, SPECIES$9, {
-	      configurable: true,
-	      get: function () { return this; }
-	    });
-	  }
-	};
-
-	var engineIsIos = /(iphone|ipod|ipad).*applewebkit/i.test(engineUserAgent$1);
-
-	var engineIsNode = classofRaw$1(global_1$1.process) == 'process';
-
-	var location = global_1$1.location;
-	var set$2 = global_1$1.setImmediate;
-	var clear = global_1$1.clearImmediate;
-	var process$2 = global_1$1.process;
-	var MessageChannel = global_1$1.MessageChannel;
-	var Dispatch = global_1$1.Dispatch;
-	var counter = 0;
-	var queue = {};
-	var ONREADYSTATECHANGE = 'onreadystatechange';
-	var defer, channel, port;
-
-	var run = function (id) {
-	  // eslint-disable-next-line no-prototype-builtins
-	  if (queue.hasOwnProperty(id)) {
-	    var fn = queue[id];
-	    delete queue[id];
-	    fn();
-	  }
-	};
-
-	var runner = function (id) {
-	  return function () {
-	    run(id);
-	  };
-	};
-
-	var listener = function (event) {
-	  run(event.data);
-	};
-
-	var post = function (id) {
-	  // old engines have not location.origin
-	  global_1$1.postMessage(id + '', location.protocol + '//' + location.host);
-	};
-
-	// Node.js 0.9+ & IE10+ has setImmediate, otherwise:
-	if (!set$2 || !clear) {
-	  set$2 = function setImmediate(fn) {
-	    var args = [];
-	    var i = 1;
-	    while (arguments.length > i) args.push(arguments[i++]);
-	    queue[++counter] = function () {
-	      // eslint-disable-next-line no-new-func
-	      (typeof fn == 'function' ? fn : Function(fn)).apply(undefined, args);
-	    };
-	    defer(counter);
-	    return counter;
-	  };
-	  clear = function clearImmediate(id) {
-	    delete queue[id];
-	  };
-	  // Node.js 0.8-
-	  if (engineIsNode) {
-	    defer = function (id) {
-	      process$2.nextTick(runner(id));
-	    };
-	  // Sphere (JS game engine) Dispatch API
-	  } else if (Dispatch && Dispatch.now) {
-	    defer = function (id) {
-	      Dispatch.now(runner(id));
-	    };
-	  // Browsers with MessageChannel, includes WebWorkers
-	  // except iOS - https://github.com/zloirock/core-js/issues/624
-	  } else if (MessageChannel && !engineIsIos) {
-	    channel = new MessageChannel();
-	    port = channel.port2;
-	    channel.port1.onmessage = listener;
-	    defer = functionBindContext$1(port.postMessage, port, 1);
-	  // Browsers with postMessage, skip WebWorkers
-	  // IE8 has postMessage, but it's sync & typeof its postMessage is 'object'
-	  } else if (
-	    global_1$1.addEventListener &&
-	    typeof postMessage == 'function' &&
-	    !global_1$1.importScripts &&
-	    location && location.protocol !== 'file:' &&
-	    !fails$1(post)
-	  ) {
-	    defer = post;
-	    global_1$1.addEventListener('message', listener, false);
-	  // IE8-
-	  } else if (ONREADYSTATECHANGE in documentCreateElement$1('script')) {
-	    defer = function (id) {
-	      html$1.appendChild(documentCreateElement$1('script'))[ONREADYSTATECHANGE] = function () {
-	        html$1.removeChild(this);
-	        run(id);
-	      };
-	    };
-	  // Rest old browsers
-	  } else {
-	    defer = function (id) {
-	      setTimeout(runner(id), 0);
-	    };
-	  }
-	}
-
-	var task = {
-	  set: set$2,
-	  clear: clear
-	};
-
-	var getOwnPropertyDescriptor$5 = objectGetOwnPropertyDescriptor$1.f;
-	var macrotask = task.set;
-
-
-
-	var MutationObserver$1 = global_1$1.MutationObserver || global_1$1.WebKitMutationObserver;
-	var document$3 = global_1$1.document;
-	var process$3 = global_1$1.process;
-	var Promise$1 = global_1$1.Promise;
-	// Node.js 11 shows ExperimentalWarning on getting `queueMicrotask`
-	var queueMicrotaskDescriptor = getOwnPropertyDescriptor$5(global_1$1, 'queueMicrotask');
-	var queueMicrotask = queueMicrotaskDescriptor && queueMicrotaskDescriptor.value;
-
-	var flush, head, last, notify, toggle, node, promise, then;
-
-	// modern engines have queueMicrotask method
-	if (!queueMicrotask) {
-	  flush = function () {
-	    var parent, fn;
-	    if (engineIsNode && (parent = process$3.domain)) parent.exit();
-	    while (head) {
-	      fn = head.fn;
-	      head = head.next;
-	      try {
-	        fn();
-	      } catch (error) {
-	        if (head) notify();
-	        else last = undefined;
-	        throw error;
-	      }
-	    } last = undefined;
-	    if (parent) parent.enter();
-	  };
-
-	  // browsers with MutationObserver, except iOS - https://github.com/zloirock/core-js/issues/339
-	  if (!engineIsIos && !engineIsNode && MutationObserver$1 && document$3) {
-	    toggle = true;
-	    node = document$3.createTextNode('');
-	    new MutationObserver$1(flush).observe(node, { characterData: true });
-	    notify = function () {
-	      node.data = toggle = !toggle;
-	    };
-	  // environments with maybe non-completely correct, but existent Promise
-	  } else if (Promise$1 && Promise$1.resolve) {
-	    // Promise.resolve without an argument throws an error in LG WebOS 2
-	    promise = Promise$1.resolve(undefined);
-	    then = promise.then;
-	    notify = function () {
-	      then.call(promise, flush);
-	    };
-	  // Node.js without promises
-	  } else if (engineIsNode) {
-	    notify = function () {
-	      process$3.nextTick(flush);
-	    };
-	  // for other environments - macrotask based on:
-	  // - setImmediate
-	  // - MessageChannel
-	  // - window.postMessag
-	  // - onreadystatechange
-	  // - setTimeout
-	  } else {
-	    notify = function () {
-	      // strange IE + webpack dev server bug - use .call(global)
-	      macrotask.call(global_1$1, flush);
-	    };
-	  }
-	}
-
-	var microtask = queueMicrotask || function (fn) {
-	  var task = { fn: fn, next: undefined };
-	  if (last) last.next = task;
-	  if (!head) {
-	    head = task;
-	    notify();
-	  } last = task;
-	};
-
-	var PromiseCapability = function (C) {
-	  var resolve, reject;
-	  this.promise = new C(function ($$resolve, $$reject) {
-	    if (resolve !== undefined || reject !== undefined) throw TypeError('Bad Promise constructor');
-	    resolve = $$resolve;
-	    reject = $$reject;
-	  });
-	  this.resolve = aFunction$3(resolve);
-	  this.reject = aFunction$3(reject);
-	};
-
-	// 25.4.1.5 NewPromiseCapability(C)
-	var f$e = function (C) {
-	  return new PromiseCapability(C);
-	};
-
-	var newPromiseCapability = {
-		f: f$e
-	};
-
-	var promiseResolve = function (C, x) {
-	  anObject$1(C);
-	  if (isObject$1(x) && x.constructor === C) return x;
-	  var promiseCapability = newPromiseCapability.f(C);
-	  var resolve = promiseCapability.resolve;
-	  resolve(x);
-	  return promiseCapability.promise;
-	};
-
-	var hostReportErrors = function (a, b) {
-	  var console = global_1$1.console;
-	  if (console && console.error) {
-	    arguments.length === 1 ? console.error(a) : console.error(a, b);
-	  }
-	};
-
-	var perform = function (exec) {
-	  try {
-	    return { error: false, value: exec() };
-	  } catch (error) {
-	    return { error: true, value: error };
-	  }
-	};
-
-	var task$1 = task.set;
-
-
-
-
-
-
-
-
-
-
-
-	var SPECIES$a = wellKnownSymbol$1('species');
-	var PROMISE = 'Promise';
-	var getInternalState$6 = internalState$1.get;
-	var setInternalState$b = internalState$1.set;
-	var getInternalPromiseState = internalState$1.getterFor(PROMISE);
-	var PromiseConstructor = nativePromiseConstructor;
-	var TypeError$1 = global_1$1.TypeError;
-	var document$4 = global_1$1.document;
-	var process$4 = global_1$1.process;
-	var $fetch$2 = getBuiltIn$1('fetch');
-	var newPromiseCapability$1 = newPromiseCapability.f;
-	var newGenericPromiseCapability = newPromiseCapability$1;
-	var DISPATCH_EVENT = !!(document$4 && document$4.createEvent && global_1$1.dispatchEvent);
-	var NATIVE_REJECTION_EVENT = typeof PromiseRejectionEvent == 'function';
-	var UNHANDLED_REJECTION = 'unhandledrejection';
-	var REJECTION_HANDLED = 'rejectionhandled';
-	var PENDING = 0;
-	var FULFILLED = 1;
-	var REJECTED = 2;
-	var HANDLED = 1;
-	var UNHANDLED = 2;
-	var Internal, OwnPromiseCapability, PromiseWrapper, nativeThen;
-
-	var FORCED$3 = isForced_1$1(PROMISE, function () {
-	  var GLOBAL_CORE_JS_PROMISE = inspectSource$1(PromiseConstructor) !== String(PromiseConstructor);
-	  if (!GLOBAL_CORE_JS_PROMISE) {
-	    // V8 6.6 (Node 10 and Chrome 66) have a bug with resolving custom thenables
-	    // https://bugs.chromium.org/p/chromium/issues/detail?id=830565
-	    // We can't detect it synchronously, so just check versions
-	    if (engineV8Version$1 === 66) return true;
-	    // Unhandled rejections tracking support, NodeJS Promise without it fails @@species test
-	    if (!engineIsNode && !NATIVE_REJECTION_EVENT) return true;
-	  }
-	  // We can't use @@species feature detection in V8 since it causes
-	  // deoptimization and performance degradation
-	  // https://github.com/zloirock/core-js/issues/679
-	  if (engineV8Version$1 >= 51 && /native code/.test(PromiseConstructor)) return false;
-	  // Detect correctness of subclassing with @@species support
-	  var promise = PromiseConstructor.resolve(1);
-	  var FakePromise = function (exec) {
-	    exec(function () { /* empty */ }, function () { /* empty */ });
-	  };
-	  var constructor = promise.constructor = {};
-	  constructor[SPECIES$a] = FakePromise;
-	  return !(promise.then(function () { /* empty */ }) instanceof FakePromise);
-	});
-
-	var INCORRECT_ITERATION$2 = FORCED$3 || !checkCorrectnessOfIteration$1(function (iterable) {
-	  PromiseConstructor.all(iterable)['catch'](function () { /* empty */ });
-	});
-
-	// helpers
-	var isThenable = function (it) {
-	  var then;
-	  return isObject$1(it) && typeof (then = it.then) == 'function' ? then : false;
-	};
-
-	var notify$1 = function (state, isReject) {
-	  if (state.notified) return;
-	  state.notified = true;
-	  var chain = state.reactions;
-	  microtask(function () {
-	    var value = state.value;
-	    var ok = state.state == FULFILLED;
-	    var index = 0;
-	    // variable length - can't use forEach
-	    while (chain.length > index) {
-	      var reaction = chain[index++];
-	      var handler = ok ? reaction.ok : reaction.fail;
-	      var resolve = reaction.resolve;
-	      var reject = reaction.reject;
-	      var domain = reaction.domain;
-	      var result, then, exited;
-	      try {
-	        if (handler) {
-	          if (!ok) {
-	            if (state.rejection === UNHANDLED) onHandleUnhandled(state);
-	            state.rejection = HANDLED;
-	          }
-	          if (handler === true) result = value;
-	          else {
-	            if (domain) domain.enter();
-	            result = handler(value); // can throw
-	            if (domain) {
-	              domain.exit();
-	              exited = true;
-	            }
-	          }
-	          if (result === reaction.promise) {
-	            reject(TypeError$1('Promise-chain cycle'));
-	          } else if (then = isThenable(result)) {
-	            then.call(result, resolve, reject);
-	          } else resolve(result);
-	        } else reject(value);
-	      } catch (error) {
-	        if (domain && !exited) domain.exit();
-	        reject(error);
-	      }
-	    }
-	    state.reactions = [];
-	    state.notified = false;
-	    if (isReject && !state.rejection) onUnhandled(state);
-	  });
-	};
-
-	var dispatchEvent = function (name, promise, reason) {
-	  var event, handler;
-	  if (DISPATCH_EVENT) {
-	    event = document$4.createEvent('Event');
-	    event.promise = promise;
-	    event.reason = reason;
-	    event.initEvent(name, false, true);
-	    global_1$1.dispatchEvent(event);
-	  } else event = { promise: promise, reason: reason };
-	  if (!NATIVE_REJECTION_EVENT && (handler = global_1$1['on' + name])) handler(event);
-	  else if (name === UNHANDLED_REJECTION) hostReportErrors('Unhandled promise rejection', reason);
-	};
-
-	var onUnhandled = function (state) {
-	  task$1.call(global_1$1, function () {
-	    var promise = state.facade;
-	    var value = state.value;
-	    var IS_UNHANDLED = isUnhandled(state);
-	    var result;
-	    if (IS_UNHANDLED) {
-	      result = perform(function () {
-	        if (engineIsNode) {
-	          process$4.emit('unhandledRejection', value, promise);
-	        } else dispatchEvent(UNHANDLED_REJECTION, promise, value);
-	      });
-	      // Browsers should not trigger `rejectionHandled` event if it was handled here, NodeJS - should
-	      state.rejection = engineIsNode || isUnhandled(state) ? UNHANDLED : HANDLED;
-	      if (result.error) throw result.value;
-	    }
-	  });
-	};
-
-	var isUnhandled = function (state) {
-	  return state.rejection !== HANDLED && !state.parent;
-	};
-
-	var onHandleUnhandled = function (state) {
-	  task$1.call(global_1$1, function () {
-	    var promise = state.facade;
-	    if (engineIsNode) {
-	      process$4.emit('rejectionHandled', promise);
-	    } else dispatchEvent(REJECTION_HANDLED, promise, state.value);
-	  });
-	};
-
-	var bind = function (fn, state, unwrap) {
-	  return function (value) {
-	    fn(state, value, unwrap);
-	  };
-	};
-
-	var internalReject = function (state, value, unwrap) {
-	  if (state.done) return;
-	  state.done = true;
-	  if (unwrap) state = unwrap;
-	  state.value = value;
-	  state.state = REJECTED;
-	  notify$1(state, true);
-	};
-
-	var internalResolve = function (state, value, unwrap) {
-	  if (state.done) return;
-	  state.done = true;
-	  if (unwrap) state = unwrap;
-	  try {
-	    if (state.facade === value) throw TypeError$1("Promise can't be resolved itself");
-	    var then = isThenable(value);
-	    if (then) {
-	      microtask(function () {
-	        var wrapper = { done: false };
-	        try {
-	          then.call(value,
-	            bind(internalResolve, wrapper, state),
-	            bind(internalReject, wrapper, state)
-	          );
-	        } catch (error) {
-	          internalReject(wrapper, error, state);
-	        }
-	      });
-	    } else {
-	      state.value = value;
-	      state.state = FULFILLED;
-	      notify$1(state, false);
-	    }
-	  } catch (error) {
-	    internalReject({ done: false }, error, state);
-	  }
-	};
-
-	// constructor polyfill
-	if (FORCED$3) {
-	  // 25.4.3.1 Promise(executor)
-	  PromiseConstructor = function Promise(executor) {
-	    anInstance$1(this, PromiseConstructor, PROMISE);
-	    aFunction$3(executor);
-	    Internal.call(this);
-	    var state = getInternalState$6(this);
-	    try {
-	      executor(bind(internalResolve, state), bind(internalReject, state));
-	    } catch (error) {
-	      internalReject(state, error);
-	    }
-	  };
-	  // eslint-disable-next-line no-unused-vars
-	  Internal = function Promise(executor) {
-	    setInternalState$b(this, {
-	      type: PROMISE,
-	      done: false,
-	      notified: false,
-	      parent: false,
-	      reactions: [],
-	      rejection: false,
-	      state: PENDING,
-	      value: undefined
-	    });
-	  };
-	  Internal.prototype = redefineAll$1(PromiseConstructor.prototype, {
-	    // `Promise.prototype.then` method
-	    // https://tc39.github.io/ecma262/#sec-promise.prototype.then
-	    then: function then(onFulfilled, onRejected) {
-	      var state = getInternalPromiseState(this);
-	      var reaction = newPromiseCapability$1(speciesConstructor$1(this, PromiseConstructor));
-	      reaction.ok = typeof onFulfilled == 'function' ? onFulfilled : true;
-	      reaction.fail = typeof onRejected == 'function' && onRejected;
-	      reaction.domain = engineIsNode ? process$4.domain : undefined;
-	      state.parent = true;
-	      state.reactions.push(reaction);
-	      if (state.state != PENDING) notify$1(state, false);
-	      return reaction.promise;
-	    },
-	    // `Promise.prototype.catch` method
-	    // https://tc39.github.io/ecma262/#sec-promise.prototype.catch
-	    'catch': function (onRejected) {
-	      return this.then(undefined, onRejected);
-	    }
-	  });
-	  OwnPromiseCapability = function () {
-	    var promise = new Internal();
-	    var state = getInternalState$6(promise);
-	    this.promise = promise;
-	    this.resolve = bind(internalResolve, state);
-	    this.reject = bind(internalReject, state);
-	  };
-	  newPromiseCapability.f = newPromiseCapability$1 = function (C) {
-	    return C === PromiseConstructor || C === PromiseWrapper
-	      ? new OwnPromiseCapability(C)
-	      : newGenericPromiseCapability(C);
-	  };
-
-	  if ( typeof nativePromiseConstructor == 'function') {
-	    nativeThen = nativePromiseConstructor.prototype.then;
-
-	    // wrap native Promise#then for native async functions
-	    redefine$1(nativePromiseConstructor.prototype, 'then', function then(onFulfilled, onRejected) {
-	      var that = this;
-	      return new PromiseConstructor(function (resolve, reject) {
-	        nativeThen.call(that, resolve, reject);
-	      }).then(onFulfilled, onRejected);
-	    // https://github.com/zloirock/core-js/issues/640
-	    }, { unsafe: true });
-
-	    // wrap fetch result
-	    if (typeof $fetch$2 == 'function') _export$1({ global: true, enumerable: true, forced: true }, {
-	      // eslint-disable-next-line no-unused-vars
-	      fetch: function fetch(input /* , init */) {
-	        return promiseResolve(PromiseConstructor, $fetch$2.apply(global_1$1, arguments));
-	      }
-	    });
-	  }
-	}
-
-	_export$1({ global: true, wrap: true, forced: FORCED$3 }, {
-	  Promise: PromiseConstructor
-	});
-
-	setToStringTag$1(PromiseConstructor, PROMISE, false);
-	setSpecies(PROMISE);
-
-	PromiseWrapper = getBuiltIn$1(PROMISE);
-
-	// statics
-	_export$1({ target: PROMISE, stat: true, forced: FORCED$3 }, {
-	  // `Promise.reject` method
-	  // https://tc39.github.io/ecma262/#sec-promise.reject
-	  reject: function reject(r) {
-	    var capability = newPromiseCapability$1(this);
-	    capability.reject.call(undefined, r);
-	    return capability.promise;
-	  }
-	});
-
-	_export$1({ target: PROMISE, stat: true, forced:  FORCED$3 }, {
-	  // `Promise.resolve` method
-	  // https://tc39.github.io/ecma262/#sec-promise.resolve
-	  resolve: function resolve(x) {
-	    return promiseResolve( this, x);
-	  }
-	});
-
-	_export$1({ target: PROMISE, stat: true, forced: INCORRECT_ITERATION$2 }, {
-	  // `Promise.all` method
-	  // https://tc39.github.io/ecma262/#sec-promise.all
-	  all: function all(iterable) {
-	    var C = this;
-	    var capability = newPromiseCapability$1(C);
-	    var resolve = capability.resolve;
-	    var reject = capability.reject;
-	    var result = perform(function () {
-	      var $promiseResolve = aFunction$3(C.resolve);
-	      var values = [];
-	      var counter = 0;
-	      var remaining = 1;
-	      iterate(iterable, function (promise) {
-	        var index = counter++;
-	        var alreadyCalled = false;
-	        values.push(undefined);
-	        remaining++;
-	        $promiseResolve.call(C, promise).then(function (value) {
-	          if (alreadyCalled) return;
-	          alreadyCalled = true;
-	          values[index] = value;
-	          --remaining || resolve(values);
-	        }, reject);
-	      });
-	      --remaining || resolve(values);
-	    });
-	    if (result.error) reject(result.value);
-	    return capability.promise;
-	  },
-	  // `Promise.race` method
-	  // https://tc39.github.io/ecma262/#sec-promise.race
-	  race: function race(iterable) {
-	    var C = this;
-	    var capability = newPromiseCapability$1(C);
-	    var reject = capability.reject;
-	    var result = perform(function () {
-	      var $promiseResolve = aFunction$3(C.resolve);
-	      iterate(iterable, function (promise) {
-	        $promiseResolve.call(C, promise).then(capability.resolve, reject);
-	      });
-	    });
-	    if (result.error) reject(result.value);
-	    return capability.promise;
-	  }
-	});
-
-	var getOwnPropertyDescriptor$6 = objectGetOwnPropertyDescriptor$1.f;
-
-
-
-
-
-
-	var nativeStartsWith = ''.startsWith;
-	var min$8 = Math.min;
-
-	var CORRECT_IS_REGEXP_LOGIC = correctIsRegexpLogic$1('startsWith');
-	// https://github.com/zloirock/core-js/pull/702
-	var MDN_POLYFILL_BUG =  !CORRECT_IS_REGEXP_LOGIC && !!function () {
-	  var descriptor = getOwnPropertyDescriptor$6(String.prototype, 'startsWith');
-	  return descriptor && !descriptor.writable;
-	}();
-
-	// `String.prototype.startsWith` method
-	// https://tc39.github.io/ecma262/#sec-string.prototype.startswith
-	_export$1({ target: 'String', proto: true, forced: !MDN_POLYFILL_BUG && !CORRECT_IS_REGEXP_LOGIC }, {
-	  startsWith: function startsWith(searchString /* , position = 0 */) {
-	    var that = String(requireObjectCoercible$1(this));
-	    notARegexp$1(searchString);
-	    var index = toLength$1(min$8(arguments.length > 1 ? arguments[1] : undefined, that.length));
-	    var search = String(searchString);
-	    return nativeStartsWith
-	      ? nativeStartsWith.call(that, search, index)
-	      : that.slice(index, index + search.length) === search;
-	  }
-	});
-
-	// ==========================================================================
-	// Type checking utils
-	// ==========================================================================
-	var getConstructor$1 = function getConstructor(input) {
-	  return input !== null && typeof input !== 'undefined' ? input.constructor : null;
-	};
-
-	var instanceOf$1 = function instanceOf(input, constructor) {
-	  return Boolean(input && constructor && input instanceof constructor);
-	};
-
-	var isNullOrUndefined$1 = function isNullOrUndefined(input) {
-	  return input === null || typeof input === 'undefined';
-	};
-
-	var isObject$3 = function isObject(input) {
-	  return getConstructor$1(input) === Object;
-	};
-
-	var isNumber$1 = function isNumber(input) {
-	  return getConstructor$1(input) === Number && !Number.isNaN(input);
-	};
-
-	var isString$1 = function isString(input) {
-	  return getConstructor$1(input) === String;
-	};
-
-	var isBoolean$1 = function isBoolean(input) {
-	  return getConstructor$1(input) === Boolean;
-	};
-
-	var isFunction$1 = function isFunction(input) {
-	  return getConstructor$1(input) === Function;
-	};
-
-	var isArray$3 = function isArray(input) {
-	  return Array.isArray(input);
-	};
-
-	var isWeakMap = function isWeakMap(input) {
-	  return instanceOf$1(input, WeakMap);
-	};
-
-	var isNodeList$1 = function isNodeList(input) {
-	  return instanceOf$1(input, NodeList);
-	};
-
-	var isElement$1 = function isElement(input) {
-	  return instanceOf$1(input, Element);
-	};
-
-	var isTextNode = function isTextNode(input) {
-	  return getConstructor$1(input) === Text;
-	};
-
-	var isEvent$1 = function isEvent(input) {
-	  return instanceOf$1(input, Event);
-	};
-
-	var isKeyboardEvent = function isKeyboardEvent(input) {
-	  return instanceOf$1(input, KeyboardEvent);
-	};
-
-	var isCue = function isCue(input) {
-	  return instanceOf$1(input, window.TextTrackCue) || instanceOf$1(input, window.VTTCue);
-	};
-
-	var isTrack = function isTrack(input) {
-	  return instanceOf$1(input, TextTrack) || !isNullOrUndefined$1(input) && isString$1(input.kind);
-	};
-
-	var isPromise = function isPromise(input) {
-	  return instanceOf$1(input, Promise) && isFunction$1(input.then);
-	};
-
-	var isEmpty$1 = function isEmpty(input) {
-	  return isNullOrUndefined$1(input) || (isString$1(input) || isArray$3(input) || isNodeList$1(input)) && !input.length || isObject$3(input) && !Object.keys(input).length;
-	};
-
-	var isUrl = function isUrl(input) {
-	  // Accept a URL object
-	  if (instanceOf$1(input, window.URL)) {
-	    return true;
-	  } // Must be string from here
-
-
-	  if (!isString$1(input)) {
-	    return false;
-	  } // Add the protocol if required
-
-
-	  var string = input;
-
-	  if (!input.startsWith('http://') || !input.startsWith('https://')) {
-	    string = "http://".concat(input);
-	  }
-
-	  try {
-	    return !isEmpty$1(new URL(string).hostname);
-	  } catch (e) {
-	    return false;
-	  }
-	};
-
-	var is$1 = {
-	  nullOrUndefined: isNullOrUndefined$1,
-	  object: isObject$3,
-	  number: isNumber$1,
-	  string: isString$1,
-	  boolean: isBoolean$1,
-	  function: isFunction$1,
-	  array: isArray$3,
-	  weakMap: isWeakMap,
-	  nodeList: isNodeList$1,
-	  element: isElement$1,
-	  textNode: isTextNode,
-	  event: isEvent$1,
-	  keyboardEvent: isKeyboardEvent,
-	  cue: isCue,
-	  track: isTrack,
-	  promise: isPromise,
-	  url: isUrl,
-	  empty: isEmpty$1
-	};
-
 	var transitionEndEvent = function () {
 	  var element = document.createElement('span');
 	  var events = {
@@ -11240,7 +11521,7 @@ typeof navigator === "object" && (function () {
 	  var type = Object.keys(events).find(function (event) {
 	    return element.style[event] !== undefined;
 	  });
-	  return is$1.string(type) ? events[type] : false;
+	  return is.string(type) ? events[type] : false;
 	}(); // Force repaint of element
 
 	function repaint(element, delay) {
@@ -11271,109 +11552,6 @@ typeof navigator === "object" && (function () {
 	  isIos: /(iPad|iPhone|iPod)/gi.test(navigator.platform)
 	};
 
-	// `Array.prototype.{ reduce, reduceRight }` methods implementation
-	var createMethod$8 = function (IS_RIGHT) {
-	  return function (that, callbackfn, argumentsLength, memo) {
-	    aFunction$3(callbackfn);
-	    var O = toObject$1(that);
-	    var self = indexedObject$1(O);
-	    var length = toLength$1(O.length);
-	    var index = IS_RIGHT ? length - 1 : 0;
-	    var i = IS_RIGHT ? -1 : 1;
-	    if (argumentsLength < 2) while (true) {
-	      if (index in self) {
-	        memo = self[index];
-	        index += i;
-	        break;
-	      }
-	      index += i;
-	      if (IS_RIGHT ? index < 0 : length <= index) {
-	        throw TypeError('Reduce of empty array with no initial value');
-	      }
-	    }
-	    for (;IS_RIGHT ? index >= 0 : length > index; index += i) if (index in self) {
-	      memo = callbackfn(memo, self[index], index, O);
-	    }
-	    return memo;
-	  };
-	};
-
-	var arrayReduce = {
-	  // `Array.prototype.reduce` method
-	  // https://tc39.github.io/ecma262/#sec-array.prototype.reduce
-	  left: createMethod$8(false),
-	  // `Array.prototype.reduceRight` method
-	  // https://tc39.github.io/ecma262/#sec-array.prototype.reduceright
-	  right: createMethod$8(true)
-	};
-
-	var $reduce = arrayReduce.left;
-
-
-
-
-
-	var STRICT_METHOD$7 = arrayMethodIsStrict$1('reduce');
-	var USES_TO_LENGTH$b = arrayMethodUsesToLength$1('reduce', { 1: 0 });
-	// Chrome 80-82 has a critical bug
-	// https://bugs.chromium.org/p/chromium/issues/detail?id=1049982
-	var CHROME_BUG = !engineIsNode && engineV8Version$1 > 79 && engineV8Version$1 < 83;
-
-	// `Array.prototype.reduce` method
-	// https://tc39.github.io/ecma262/#sec-array.prototype.reduce
-	_export$1({ target: 'Array', proto: true, forced: !STRICT_METHOD$7 || !USES_TO_LENGTH$b || CHROME_BUG }, {
-	  reduce: function reduce(callbackfn /* , initialValue */) {
-	    return $reduce(this, callbackfn, arguments.length, arguments.length > 1 ? arguments[1] : undefined);
-	  }
-	});
-
-	// `Object.assign` method
-	// https://tc39.github.io/ecma262/#sec-object.assign
-	_export$1({ target: 'Object', stat: true, forced: Object.assign !== objectAssign$1 }, {
-	  assign: objectAssign$1
-	});
-
-	function cloneDeep(object) {
-	  return JSON.parse(JSON.stringify(object));
-	} // Get a nested value in an object
-
-	function getDeep(object, path) {
-	  return path.split('.').reduce(function (obj, key) {
-	    return obj && obj[key];
-	  }, object);
-	} // Deep extend destination object with N more objects
-
-	function extend() {
-	  var target = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-	  for (var _len = arguments.length, sources = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-	    sources[_key - 1] = arguments[_key];
-	  }
-
-	  if (!sources.length) {
-	    return target;
-	  }
-
-	  var source = sources.shift();
-
-	  if (!is$1.object(source)) {
-	    return target;
-	  }
-
-	  Object.keys(source).forEach(function (key) {
-	    if (is$1.object(source[key])) {
-	      if (!Object.keys(target).includes(key)) {
-	        Object.assign(target, _defineProperty({}, key, {}));
-	      }
-
-	      extend(target[key], source[key]);
-	    } else {
-	      Object.assign(target, _defineProperty({}, key, source[key]));
-	    }
-	  });
-	  return extend.apply(void 0, [target].concat(sources));
-	}
-
 	function wrap$2(elements, wrapper) {
 	  // Convert `elements` to an array, if necessary.
 	  var targets = elements.length ? elements : [elements]; // Loops backwards to prevent having to clone the wrapper on the
@@ -11399,7 +11577,7 @@ typeof navigator === "object" && (function () {
 	} // Set attributes
 
 	function setAttributes(element, attributes) {
-	  if (!is$1.element(element) || is$1.empty(attributes)) {
+	  if (!is.element(element) || is.empty(attributes)) {
 	    return;
 	  } // Assume null and undefined attributes should be left out,
 	  // Setting them would otherwise convert them to "null" and "undefined"
@@ -11409,7 +11587,7 @@ typeof navigator === "object" && (function () {
 	    var _ref2 = _slicedToArray(_ref, 2),
 	        value = _ref2[1];
 
-	    return !is$1.nullOrUndefined(value);
+	    return !is.nullOrUndefined(value);
 	  }).forEach(function (_ref3) {
 	    var _ref4 = _slicedToArray(_ref3, 2),
 	        key = _ref4[0],
@@ -11423,12 +11601,12 @@ typeof navigator === "object" && (function () {
 	  // Create a new <element>
 	  var element = document.createElement(type); // Set all passed attributes
 
-	  if (is$1.object(attributes)) {
+	  if (is.object(attributes)) {
 	    setAttributes(element, attributes);
 	  } // Add text node
 
 
-	  if (is$1.string(text)) {
+	  if (is.string(text)) {
 	    element.innerText = text;
 	  } // Return built element
 
@@ -11437,7 +11615,7 @@ typeof navigator === "object" && (function () {
 	} // Inaert an element after another
 
 	function insertElement(type, parent, attributes, text) {
-	  if (!is$1.element(parent)) {
+	  if (!is.element(parent)) {
 	    return;
 	  }
 
@@ -11445,12 +11623,12 @@ typeof navigator === "object" && (function () {
 	} // Remove element(s)
 
 	function removeElement(element) {
-	  if (is$1.nodeList(element) || is$1.array(element)) {
+	  if (is.nodeList(element) || is.array(element)) {
 	    Array.from(element).forEach(removeElement);
 	    return;
 	  }
 
-	  if (!is$1.element(element) || !is$1.element(element.parentNode)) {
+	  if (!is.element(element) || !is.element(element.parentNode)) {
 	    return;
 	  }
 
@@ -11458,7 +11636,7 @@ typeof navigator === "object" && (function () {
 	} // Remove all child elements
 
 	function emptyElement(element) {
-	  if (!is$1.element(element)) {
+	  if (!is.element(element)) {
 	    return;
 	  }
 
@@ -11471,7 +11649,7 @@ typeof navigator === "object" && (function () {
 	} // Replace element
 
 	function replaceElement(newChild, oldChild) {
-	  if (!is$1.element(oldChild) || !is$1.element(oldChild.parentNode) || !is$1.element(newChild)) {
+	  if (!is.element(oldChild) || !is.element(oldChild.parentNode) || !is.element(newChild)) {
 	    return null;
 	  }
 
@@ -11484,7 +11662,7 @@ typeof navigator === "object" && (function () {
 	  // '.test' to { class: 'test' }
 	  // '#test' to { id: 'test' }
 	  // '[data-test="test"]' to { 'data-test': 'test' }
-	  if (!is$1.string(sel) || is$1.empty(sel)) {
+	  if (!is.string(sel) || is.empty(sel)) {
 	    return {};
 	  }
 
@@ -11508,7 +11686,7 @@ typeof navigator === "object" && (function () {
 	    switch (start) {
 	      case '.':
 	        // Add to existing classname
-	        if (is$1.string(existing.class)) {
+	        if (is.string(existing.class)) {
 	          attributes.class = "".concat(existing.class, " ").concat(className);
 	        } else {
 	          attributes.class = className;
@@ -11531,13 +11709,13 @@ typeof navigator === "object" && (function () {
 	} // Toggle hidden
 
 	function toggleHidden(element, hidden) {
-	  if (!is$1.element(element)) {
+	  if (!is.element(element)) {
 	    return;
 	  }
 
 	  var hide = hidden;
 
-	  if (!is$1.boolean(hide)) {
+	  if (!is.boolean(hide)) {
 	    hide = !element.hidden;
 	  } // eslint-disable-next-line no-param-reassign
 
@@ -11546,13 +11724,13 @@ typeof navigator === "object" && (function () {
 	} // Mirror Element.classList.toggle, with IE compatibility for "force" argument
 
 	function toggleClass(element, className, force) {
-	  if (is$1.nodeList(element)) {
+	  if (is.nodeList(element)) {
 	    return Array.from(element).map(function (e) {
 	      return toggleClass(e, className, force);
 	    });
 	  }
 
-	  if (is$1.element(element)) {
+	  if (is.element(element)) {
 	    var method = 'toggle';
 
 	    if (typeof force !== 'undefined') {
@@ -11567,7 +11745,7 @@ typeof navigator === "object" && (function () {
 	} // Has class name
 
 	function hasClass(element, className) {
-	  return is$1.element(element) && element.classList.contains(className);
+	  return is.element(element) && element.classList.contains(className);
 	} // Element matches selector
 
 	function matches$1(element, selector) {
@@ -11613,7 +11791,7 @@ typeof navigator === "object" && (function () {
 	  var element = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
 	  var tabFocus = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-	  if (!is$1.element(element)) {
+	  if (!is.element(element)) {
 	    return;
 	  } // Set regular focus
 
@@ -11659,7 +11837,7 @@ typeof navigator === "object" && (function () {
 	    // https://developer.apple.com/documentation/webkitjs/adding_picture_in_picture_to_your_safari_media_controls
 
 
-	    if (is$1.function(createElement('video').webkitSetPresentationMode)) {
+	    if (is.function(createElement('video').webkitSetPresentationMode)) {
 	      return true;
 	    } // Chrome
 	    // https://developers.google.com/web/updates/2018/10/watch-video-using-picture-in-picture
@@ -11673,7 +11851,7 @@ typeof navigator === "object" && (function () {
 	  }(),
 	  // Airplay support
 	  // Safari only currently
-	  airplay: is$1.function(window.WebKitPlaybackTargetAvailabilityEvent),
+	  airplay: is.function(window.WebKitPlaybackTargetAvailabilityEvent),
 	  // Inline playback support
 	  // https://webkit.org/blog/6784/new-video-policies-for-ios/
 	  playsinline: 'playsInline' in document.createElement('video'),
@@ -11681,7 +11859,7 @@ typeof navigator === "object" && (function () {
 	  // Credits: http://diveintohtml5.info/everything.html
 	  // Related: http://www.leanbackplayer.com/test/h5mt.html
 	  mime: function mime(input) {
-	    if (is$1.empty(input)) {
+	    if (is.empty(input)) {
 	      return false;
 	    }
 
@@ -11755,7 +11933,7 @@ typeof navigator === "object" && (function () {
 	  var capture = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : false;
 
 	  // Bail if no element, event, or callback
-	  if (!element || !('addEventListener' in element) || is$1.empty(event) || !is$1.function(callback)) {
+	  if (!element || !('addEventListener' in element) || is.empty(event) || !is.function(callback)) {
 	    return;
 	  } // Allow multiple events
 
@@ -11833,7 +12011,7 @@ typeof navigator === "object" && (function () {
 	  var detail = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 
 	  // Bail if no element
-	  if (!is$1.element(element) || is$1.empty(type)) {
+	  if (!is.element(element) || is.empty(type)) {
 	    return;
 	  } // Create and dispatch the event
 
@@ -11877,7 +12055,7 @@ typeof navigator === "object" && (function () {
 	 */
 
 	function silencePromise(value) {
-	  if (is$1.promise(value)) {
+	  if (is.promise(value)) {
 	    value.then(null, function () {});
 	  }
 	}
@@ -11887,26 +12065,26 @@ typeof navigator === "object" && (function () {
 
 
 	var STRICT_METHOD$8 = arrayMethodIsStrict$1('every');
-	var USES_TO_LENGTH$c = arrayMethodUsesToLength$1('every');
+	var USES_TO_LENGTH$d = arrayMethodUsesToLength$1('every');
 
 	// `Array.prototype.every` method
 	// https://tc39.github.io/ecma262/#sec-array.prototype.every
-	_export$1({ target: 'Array', proto: true, forced: !STRICT_METHOD$8 || !USES_TO_LENGTH$c }, {
+	_export$1({ target: 'Array', proto: true, forced: !STRICT_METHOD$8 || !USES_TO_LENGTH$d }, {
 	  every: function every(callbackfn /* , thisArg */) {
 	    return $every(this, callbackfn, arguments.length > 1 ? arguments[1] : undefined);
 	  }
 	});
 
 	function validateRatio(input) {
-	  if (!is$1.array(input) && (!is$1.string(input) || !input.includes(':'))) {
+	  if (!is.array(input) && (!is.string(input) || !input.includes(':'))) {
 	    return false;
 	  }
 
-	  var ratio = is$1.array(input) ? input : input.split(':');
-	  return ratio.map(Number).every(is$1.number);
+	  var ratio = is.array(input) ? input : input.split(':');
+	  return ratio.map(Number).every(is.number);
 	}
 	function reduceAspectRatio(ratio) {
-	  if (!is$1.array(ratio) || !ratio.every(is$1.number)) {
+	  if (!is.array(ratio) || !ratio.every(is.number)) {
 	    return null;
 	  }
 
@@ -11934,7 +12112,7 @@ typeof navigator === "object" && (function () {
 	  } // Get from embed
 
 
-	  if (ratio === null && !is$1.empty(this.embed) && is$1.array(this.embed.ratio)) {
+	  if (ratio === null && !is.empty(this.embed) && is.array(this.embed.ratio)) {
 	    ratio = this.embed.ratio;
 	  } // Get from HTML5 video
 
@@ -11957,7 +12135,7 @@ typeof navigator === "object" && (function () {
 	  var wrapper = this.elements.wrapper;
 	  var ratio = getAspectRatio.call(this, input);
 
-	  var _ref = is$1.array(ratio) ? ratio : [0, 0],
+	  var _ref = is.array(ratio) ? ratio : [0, 0],
 	      _ref2 = _slicedToArray(_ref, 2),
 	      w = _ref2[0],
 	      h = _ref2[1];
@@ -11997,7 +12175,7 @@ typeof navigator === "object" && (function () {
 	    return sources.filter(function (source) {
 	      var type = source.getAttribute('type');
 
-	      if (is$1.empty(type)) {
+	      if (is.empty(type)) {
 	        return true;
 	      }
 
@@ -12025,7 +12203,7 @@ typeof navigator === "object" && (function () {
 
 	    player.options.speed = player.config.speed.options; // Set aspect ratio if fixed
 
-	    if (!is$1.empty(this.config.ratio)) {
+	    if (!is.empty(this.config.ratio)) {
 	      setAspectRatio.call(player);
 	    } // Quality
 
@@ -12046,7 +12224,7 @@ typeof navigator === "object" && (function () {
 	        } // If we're using an an external handler...
 
 
-	        if (player.config.quality.forced && is$1.function(player.config.quality.onChange)) {
+	        if (player.config.quality.forced && is.function(player.config.quality.onChange)) {
 	          player.config.quality.onChange(input);
 	        } else {
 	          // Get sources
@@ -12115,7 +12293,7 @@ typeof navigator === "object" && (function () {
 	};
 
 	function dedupe(array) {
-	  if (!is$1.array(array)) {
+	  if (!is.array(array)) {
 	    return array;
 	  }
 
@@ -12125,7 +12303,7 @@ typeof navigator === "object" && (function () {
 	} // Get the closest value in an array
 
 	function closest$1(array, value) {
-	  if (!is$1.array(array) || !array.length) {
+	  if (!is.array(array) || !array.length) {
 	    return null;
 	  }
 
@@ -12133,210 +12311,6 @@ typeof navigator === "object" && (function () {
 	    return Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev;
 	  });
 	}
-
-	var HAS_SPECIES_SUPPORT$3 = arrayMethodHasSpeciesSupport$1('slice');
-	var USES_TO_LENGTH$d = arrayMethodUsesToLength$1('slice', { ACCESSORS: true, 0: 0, 1: 2 });
-
-	var SPECIES$b = wellKnownSymbol$1('species');
-	var nativeSlice$1 = [].slice;
-	var max$5 = Math.max;
-
-	// `Array.prototype.slice` method
-	// https://tc39.github.io/ecma262/#sec-array.prototype.slice
-	// fallback for not array-like ES3 strings and DOM objects
-	_export$1({ target: 'Array', proto: true, forced: !HAS_SPECIES_SUPPORT$3 || !USES_TO_LENGTH$d }, {
-	  slice: function slice(start, end) {
-	    var O = toIndexedObject$1(this);
-	    var length = toLength$1(O.length);
-	    var k = toAbsoluteIndex$1(start, length);
-	    var fin = toAbsoluteIndex$1(end === undefined ? length : end, length);
-	    // inline `ArraySpeciesCreate` for usage native `Array#slice` where it's possible
-	    var Constructor, result, n;
-	    if (isArray$1(O)) {
-	      Constructor = O.constructor;
-	      // cross-realm fallback
-	      if (typeof Constructor == 'function' && (Constructor === Array || isArray$1(Constructor.prototype))) {
-	        Constructor = undefined;
-	      } else if (isObject$1(Constructor)) {
-	        Constructor = Constructor[SPECIES$b];
-	        if (Constructor === null) Constructor = undefined;
-	      }
-	      if (Constructor === Array || Constructor === undefined) {
-	        return nativeSlice$1.call(O, k, fin);
-	      }
-	    }
-	    result = new (Constructor === undefined ? Array : Constructor)(max$5(fin - k, 0));
-	    for (n = 0; k < fin; k++, n++) if (k in O) createProperty$1(result, n, O[k]);
-	    result.length = n;
-	    return result;
-	  }
-	});
-
-	var defineProperty$a = objectDefineProperty$1.f;
-	var getOwnPropertyNames$1 = objectGetOwnPropertyNames$1.f;
-
-
-
-
-
-	var setInternalState$c = internalState$1.set;
-
-
-
-	var MATCH$4 = wellKnownSymbol$1('match');
-	var NativeRegExp = global_1$1.RegExp;
-	var RegExpPrototype$2 = NativeRegExp.prototype;
-	var re1 = /a/g;
-	var re2 = /a/g;
-
-	// "new" should create a new object, old webkit bug
-	var CORRECT_NEW = new NativeRegExp(re1) !== re1;
-
-	var UNSUPPORTED_Y$4 = regexpStickyHelpers$1.UNSUPPORTED_Y;
-
-	var FORCED$4 = descriptors$1 && isForced_1$1('RegExp', (!CORRECT_NEW || UNSUPPORTED_Y$4 || fails$1(function () {
-	  re2[MATCH$4] = false;
-	  // RegExp constructor can alter flags and IsRegExp works correct with @@match
-	  return NativeRegExp(re1) != re1 || NativeRegExp(re2) == re2 || NativeRegExp(re1, 'i') != '/a/i';
-	})));
-
-	// `RegExp` constructor
-	// https://tc39.github.io/ecma262/#sec-regexp-constructor
-	if (FORCED$4) {
-	  var RegExpWrapper = function RegExp(pattern, flags) {
-	    var thisIsRegExp = this instanceof RegExpWrapper;
-	    var patternIsRegExp = isRegexp$1(pattern);
-	    var flagsAreUndefined = flags === undefined;
-	    var sticky;
-
-	    if (!thisIsRegExp && patternIsRegExp && pattern.constructor === RegExpWrapper && flagsAreUndefined) {
-	      return pattern;
-	    }
-
-	    if (CORRECT_NEW) {
-	      if (patternIsRegExp && !flagsAreUndefined) pattern = pattern.source;
-	    } else if (pattern instanceof RegExpWrapper) {
-	      if (flagsAreUndefined) flags = regexpFlags$1.call(pattern);
-	      pattern = pattern.source;
-	    }
-
-	    if (UNSUPPORTED_Y$4) {
-	      sticky = !!flags && flags.indexOf('y') > -1;
-	      if (sticky) flags = flags.replace(/y/g, '');
-	    }
-
-	    var result = inheritIfRequired(
-	      CORRECT_NEW ? new NativeRegExp(pattern, flags) : NativeRegExp(pattern, flags),
-	      thisIsRegExp ? this : RegExpPrototype$2,
-	      RegExpWrapper
-	    );
-
-	    if (UNSUPPORTED_Y$4 && sticky) setInternalState$c(result, { sticky: sticky });
-
-	    return result;
-	  };
-	  var proxy = function (key) {
-	    key in RegExpWrapper || defineProperty$a(RegExpWrapper, key, {
-	      configurable: true,
-	      get: function () { return NativeRegExp[key]; },
-	      set: function (it) { NativeRegExp[key] = it; }
-	    });
-	  };
-	  var keys$3 = getOwnPropertyNames$1(NativeRegExp);
-	  var index = 0;
-	  while (keys$3.length > index) proxy(keys$3[index++]);
-	  RegExpPrototype$2.constructor = RegExpWrapper;
-	  RegExpWrapper.prototype = RegExpPrototype$2;
-	  redefine$1(global_1$1, 'RegExp', RegExpWrapper);
-	}
-
-	// https://tc39.github.io/ecma262/#sec-get-regexp-@@species
-	setSpecies('RegExp');
-
-	function getPercentage(current, max) {
-	  if (current === 0 || max === 0 || Number.isNaN(current) || Number.isNaN(max)) {
-	    return 0;
-	  }
-
-	  return (current / max * 100).toFixed(2);
-	} // Replace all occurances of a string in a string
-
-	var replaceAll = function replaceAll() {
-	  var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-	  var find = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
-	  var replace = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
-	  return input.replace(new RegExp(find.toString().replace(/([.*+?^=!:${}()|[\]/\\])/g, '\\$1'), 'g'), replace.toString());
-	}; // Convert to title case
-
-	var toTitleCase = function toTitleCase() {
-	  var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-	  return input.toString().replace(/\w\S*/g, function (text) {
-	    return text.charAt(0).toUpperCase() + text.substr(1).toLowerCase();
-	  });
-	}; // Convert string to pascalCase
-
-	function toPascalCase() {
-	  var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-	  var string = input.toString(); // Convert kebab case
-
-	  string = replaceAll(string, '-', ' '); // Convert snake case
-
-	  string = replaceAll(string, '_', ' '); // Convert to title case
-
-	  string = toTitleCase(string); // Convert to pascal case
-
-	  return replaceAll(string, ' ', '');
-	} // Convert string to pascalCase
-
-	function toCamelCase() {
-	  var input = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-	  var string = input.toString(); // Convert to pascal case
-
-	  string = toPascalCase(string); // Convert first character to lowercase
-
-	  return string.charAt(0).toLowerCase() + string.slice(1);
-	} // Remove HTML from a string
-
-	var resources = {
-	  pip: 'PIP',
-	  airplay: 'AirPlay',
-	  html5: 'HTML5',
-	  vimeo: 'Vimeo',
-	  youtube: 'YouTube'
-	};
-	var i18n$1 = {
-	  get: function get() {
-	    var key = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-	    var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-	    if (is$1.empty(key) || is$1.empty(config)) {
-	      return '';
-	    }
-
-	    var string = getDeep(config.i18n, key);
-
-	    if (is$1.empty(string)) {
-	      if (Object.keys(resources).includes(key)) {
-	        return resources[key];
-	      }
-
-	      return '';
-	    }
-
-	    var replace = {
-	      '{seektime}': config.seekTime,
-	      '{title}': config.title
-	    };
-	    Object.entries(replace).forEach(function (_ref) {
-	      var _ref2 = _slicedToArray(_ref, 2),
-	          k = _ref2[0],
-	          v = _ref2[1];
-
-	      string = replaceAll(string, k, v);
-	    });
-	    return string;
-	  }
-	};
 
 	var Storage = /*#__PURE__*/function () {
 	  function Storage(player) {
@@ -12356,12 +12330,12 @@ typeof navigator === "object" && (function () {
 
 	      var store = window.localStorage.getItem(this.key);
 
-	      if (is$1.empty(store)) {
+	      if (is.empty(store)) {
 	        return null;
 	      }
 
 	      var json = JSON.parse(store);
-	      return is$1.string(key) && key.length ? json[key] : json;
+	      return is.string(key) && key.length ? json[key] : json;
 	    }
 	  }, {
 	    key: "set",
@@ -12372,14 +12346,14 @@ typeof navigator === "object" && (function () {
 	      } // Can only store objectst
 
 
-	      if (!is$1.object(object)) {
+	      if (!is.object(object)) {
 	        return;
 	      } // Get current storage
 
 
 	      var storage = this.get(); // Default to empty object
 
-	      if (is$1.empty(storage)) {
+	      if (is.empty(storage)) {
 	        storage = {};
 	      } // Update the working copy of the values
 
@@ -12452,12 +12426,12 @@ typeof navigator === "object" && (function () {
 	// ==========================================================================
 
 	function loadSprite(url, id) {
-	  if (!is$1.string(url)) {
+	  if (!is.string(url)) {
 	    return;
 	  }
 
 	  var prefix = 'cache';
-	  var hasId = is$1.string(id);
+	  var hasId = is.string(id);
 	  var isCached = false;
 
 	  var exists = function exists() {
@@ -12500,7 +12474,7 @@ typeof navigator === "object" && (function () {
 
 
 	    fetch(url).then(function (result) {
-	      if (is$1.empty(result)) {
+	      if (is.empty(result)) {
 	        return;
 	      }
 
@@ -12542,7 +12516,7 @@ typeof navigator === "object" && (function () {
 	  var inverted = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
 	  // Bail if the value isn't a number
-	  if (!is$1.number(time)) {
+	  if (!is.number(time)) {
 	    return formatTime(undefined, displayHours, inverted);
 	  } // Format time component to add leading zero
 
@@ -12608,7 +12582,7 @@ typeof navigator === "object" && (function () {
 	        duration: getElement.call(this, this.config.selectors.display.duration)
 	      }; // Seek tooltip
 
-	      if (is$1.element(this.elements.progress)) {
+	      if (is.element(this.elements.progress)) {
 	        this.elements.display.seekTooltip = this.elements.progress.querySelector(".".concat(this.config.classNames.tooltip));
 	      }
 
@@ -12651,7 +12625,7 @@ typeof navigator === "object" && (function () {
 	  // Create hidden text label
 	  createLabel: function createLabel(key) {
 	    var attr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-	    var text = i18n$1.get(key, this.config);
+	    var text = i18n.get(key, this.config);
 
 	    var attributes = _objectSpread2(_objectSpread2({}, attr), {}, {
 	      class: [attr.class, this.config.classNames.hidden].filter(Boolean).join(' ')
@@ -12661,7 +12635,7 @@ typeof navigator === "object" && (function () {
 	  },
 	  // Create a badge
 	  createBadge: function createBadge(text) {
-	    if (is$1.empty(text)) {
+	    if (is.empty(text)) {
 	      return null;
 	    }
 
@@ -12753,11 +12727,11 @@ typeof navigator === "object" && (function () {
 	        break;
 
 	      default:
-	        if (is$1.empty(props.label)) {
+	        if (is.empty(props.label)) {
 	          props.label = type;
 	        }
 
-	        if (is$1.empty(props.icon)) {
+	        if (is.empty(props.icon)) {
 	          props.icon = buttonType;
 	        }
 
@@ -12790,7 +12764,7 @@ typeof navigator === "object" && (function () {
 	    setAttributes(button, attributes); // We have multiple play buttons
 
 	    if (type === 'play') {
-	      if (!is$1.array(this.elements.buttons[type])) {
+	      if (!is.array(this.elements.buttons[type])) {
 	        this.elements.buttons[type] = [];
 	      }
 
@@ -12813,7 +12787,7 @@ typeof navigator === "object" && (function () {
 	      autocomplete: 'off',
 	      // A11y fixes for https://github.com/sampotts/plyr/issues/905
 	      role: 'slider',
-	      'aria-label': i18n$1.get(type, this.config),
+	      'aria-label': i18n.get(type, this.config),
 	      'aria-valuemin': 0,
 	      'aria-valuemax': 100,
 	      'aria-valuenow': 0
@@ -12841,7 +12815,7 @@ typeof navigator === "object" && (function () {
 	        played: 'played',
 	        buffer: 'buffered'
 	      }[type];
-	      var suffix = suffixKey ? i18n$1.get(suffixKey, this.config) : '';
+	      var suffix = suffixKey ? i18n.get(suffixKey, this.config) : '';
 	      progress.innerText = "% ".concat(suffix.toLowerCase());
 	    }
 
@@ -12853,7 +12827,7 @@ typeof navigator === "object" && (function () {
 	    var attributes = getAttributesFromSelector(this.config.selectors.display[type], attrs);
 	    var container = createElement('div', extend(attributes, {
 	      class: "".concat(attributes.class ? attributes.class : '', " ").concat(this.config.classNames.display.time, " ").trim(),
-	      'aria-label': i18n$1.get(type, this.config)
+	      'aria-label': i18n.get(type, this.config)
 	    }), '00:00'); // Reference for updates
 
 	    this.elements.display[type] = container;
@@ -12891,13 +12865,13 @@ typeof navigator === "object" && (function () {
 	          if (event.which === 40 || isRadioButton && event.which === 39) {
 	            target = menuItem.nextElementSibling;
 
-	            if (!is$1.element(target)) {
+	            if (!is.element(target)) {
 	              target = menuItem.parentNode.firstElementChild;
 	            }
 	          } else {
 	            target = menuItem.previousElementSibling;
 
-	            if (!is$1.element(target)) {
+	            if (!is.element(target)) {
 	              target = menuItem.parentNode.lastElementChild;
 	            }
 	          }
@@ -12940,7 +12914,7 @@ typeof navigator === "object" && (function () {
 
 	    flex.innerHTML = title;
 
-	    if (is$1.element(badge)) {
+	    if (is.element(badge)) {
 	      flex.appendChild(badge);
 	    }
 
@@ -12965,7 +12939,7 @@ typeof navigator === "object" && (function () {
 	      }
 	    });
 	    this.listeners.bind(menuItem, 'click keyup', function (event) {
-	      if (is$1.keyboardEvent(event) && event.which !== 32) {
+	      if (is.keyboardEvent(event) && event.which !== 32) {
 	        return;
 	      }
 
@@ -12987,7 +12961,7 @@ typeof navigator === "object" && (function () {
 	          break;
 	      }
 
-	      controls.showMenuPanel.call(_this3, 'home', is$1.keyboardEvent(event));
+	      controls.showMenuPanel.call(_this3, 'home', is.keyboardEvent(event));
 	    }, type, false);
 	    controls.bindMenuItemShortcuts.call(this, menuItem, type);
 	    list.appendChild(menuItem);
@@ -12998,7 +12972,7 @@ typeof navigator === "object" && (function () {
 	    var inverted = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
 	    // Bail if the value isn't a number
-	    if (!is$1.number(time)) {
+	    if (!is.number(time)) {
 	      return time;
 	    } // Always display hours if duration is over an hour
 
@@ -13013,7 +12987,7 @@ typeof navigator === "object" && (function () {
 	    var inverted = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
 	    // Bail if there's no element to display or the value isn't a number
-	    if (!is$1.element(target) || !is$1.number(time)) {
+	    if (!is.element(target) || !is.number(time)) {
 	      return;
 	    } // eslint-disable-next-line no-param-reassign
 
@@ -13027,12 +13001,12 @@ typeof navigator === "object" && (function () {
 	    } // Update range
 
 
-	    if (is$1.element(this.elements.inputs.volume)) {
+	    if (is.element(this.elements.inputs.volume)) {
 	      controls.setRange.call(this, this.elements.inputs.volume, this.muted ? 0 : this.volume);
 	    } // Update mute state
 
 
-	    if (is$1.element(this.elements.buttons.mute)) {
+	    if (is.element(this.elements.buttons.mute)) {
 	      this.elements.buttons.mute.pressed = this.muted || this.volume === 0;
 	    }
 	  },
@@ -13040,7 +13014,7 @@ typeof navigator === "object" && (function () {
 	  setRange: function setRange(target) {
 	    var value = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 
-	    if (!is$1.element(target)) {
+	    if (!is.element(target)) {
 	      return;
 	    } // eslint-disable-next-line
 
@@ -13053,22 +13027,22 @@ typeof navigator === "object" && (function () {
 	  updateProgress: function updateProgress(event) {
 	    var _this4 = this;
 
-	    if (!this.supported.ui || !is$1.event(event)) {
+	    if (!this.supported.ui || !is.event(event)) {
 	      return;
 	    }
 
 	    var value = 0;
 
 	    var setProgress = function setProgress(target, input) {
-	      var val = is$1.number(input) ? input : 0;
-	      var progress = is$1.element(target) ? target : _this4.elements.display.buffer; // Update value and label
+	      var val = is.number(input) ? input : 0;
+	      var progress = is.element(target) ? target : _this4.elements.display.buffer; // Update value and label
 
-	      if (is$1.element(progress)) {
+	      if (is.element(progress)) {
 	        progress.value = val; // Update text label inside
 
 	        var label = progress.getElementsByTagName('span')[0];
 
-	        if (is$1.element(label)) {
+	        if (is.element(label)) {
 	          label.childNodes[0].nodeValue = val;
 	        }
 	      }
@@ -13099,9 +13073,9 @@ typeof navigator === "object" && (function () {
 	  // Webkit polyfill for lower fill range
 	  updateRangeFill: function updateRangeFill(target) {
 	    // Get range from event if event passed
-	    var range = is$1.event(target) ? target.target : target; // Needs to be a valid <input type='range'>
+	    var range = is.event(target) ? target.target : target; // Needs to be a valid <input type='range'>
 
-	    if (!is$1.element(range) || range.getAttribute('type') !== 'range') {
+	    if (!is.element(range) || range.getAttribute('type') !== 'range') {
 	      return;
 	    } // Set aria values for https://github.com/sampotts/plyr/issues/905
 
@@ -13110,7 +13084,7 @@ typeof navigator === "object" && (function () {
 	      range.setAttribute('aria-valuenow', this.currentTime);
 	      var currentTime = controls.formatTime(this.currentTime);
 	      var duration = controls.formatTime(this.duration);
-	      var format = i18n$1.get('seekLabel', this.config);
+	      var format = i18n.get('seekLabel', this.config);
 	      range.setAttribute('aria-valuetext', format.replace('{currentTime}', currentTime).replace('{duration}', duration));
 	    } else if (matches$1(range, this.config.selectors.inputs.volume)) {
 	      var percent = range.value * 100;
@@ -13133,7 +13107,7 @@ typeof navigator === "object" && (function () {
 	    var _this5 = this;
 
 	    // Bail if setting not true
-	    if (!this.config.tooltips.seek || !is$1.element(this.elements.inputs.seek) || !is$1.element(this.elements.display.seekTooltip) || this.duration === 0) {
+	    if (!this.config.tooltips.seek || !is.element(this.elements.inputs.seek) || !is.element(this.elements.display.seekTooltip) || this.duration === 0) {
 	      return;
 	    }
 
@@ -13153,7 +13127,7 @@ typeof navigator === "object" && (function () {
 	    var percent = 0;
 	    var clientRect = this.elements.progress.getBoundingClientRect();
 
-	    if (is$1.event(event)) {
+	    if (is.event(event)) {
 	      percent = 100 / clientRect.width * (event.pageX - clientRect.left);
 	    } else if (hasClass(this.elements.display.seekTooltip, visible)) {
 	      percent = parseFloat(this.elements.display.seekTooltip.style.left, 10);
@@ -13174,14 +13148,14 @@ typeof navigator === "object" && (function () {
 	    this.elements.display.seekTooltip.style.setProperty('left', "".concat(percent, "%"), 'important'); // Show/hide the tooltip
 	    // If the event is a moues in/out and percentage is inside bounds
 
-	    if (is$1.event(event) && ['mouseenter', 'mouseleave'].includes(event.type)) {
+	    if (is.event(event) && ['mouseenter', 'mouseleave'].includes(event.type)) {
 	      toggle(event.type === 'mouseenter');
 	    }
 	  },
 	  // Handle time change event
 	  timeUpdate: function timeUpdate(event) {
 	    // Only invert if only one time element is displayed and used for both duration and currentTime
-	    var invert = !is$1.element(this.elements.display.duration) && this.config.invertTime; // Duration
+	    var invert = !is.element(this.elements.display.duration) && this.config.invertTime; // Duration
 
 	    controls.updateTimeDisplay.call(this, this.elements.display.currentTime, invert ? this.duration - this.currentTime : this.currentTime, invert); // Ignore updates while seeking
 
@@ -13210,12 +13184,12 @@ typeof navigator === "object" && (function () {
 	    } // Update ARIA values
 
 
-	    if (is$1.element(this.elements.inputs.seek)) {
+	    if (is.element(this.elements.inputs.seek)) {
 	      this.elements.inputs.seek.setAttribute('aria-valuemax', this.duration);
 	    } // If there's a spot to display duration
 
 
-	    var hasDuration = is$1.element(this.elements.display.duration); // If there's only one time display, display duration there
+	    var hasDuration = is.element(this.elements.display.duration); // If there's only one time display, display duration there
 
 	    if (!hasDuration && this.config.displayDuration && this.paused) {
 	      controls.updateTimeDisplay.call(this, this.elements.display.currentTime, this.duration);
@@ -13242,14 +13216,14 @@ typeof navigator === "object" && (function () {
 	    if (setting === 'captions') {
 	      value = this.currentTrack;
 	    } else {
-	      value = !is$1.empty(input) ? input : this[setting]; // Get default
+	      value = !is.empty(input) ? input : this[setting]; // Get default
 
-	      if (is$1.empty(value)) {
+	      if (is.empty(value)) {
 	        value = this.config[setting].default;
 	      } // Unsupported value
 
 
-	      if (!is$1.empty(this.options[setting]) && !this.options[setting].includes(value)) {
+	      if (!is.empty(this.options[setting]) && !this.options[setting].includes(value)) {
 	        this.debug.warn("Unsupported value of '".concat(value, "' for ").concat(setting));
 	        return;
 	      } // Disabled value
@@ -13262,12 +13236,12 @@ typeof navigator === "object" && (function () {
 	    } // Get the list if we need to
 
 
-	    if (!is$1.element(list)) {
+	    if (!is.element(list)) {
 	      list = pane && pane.querySelector('[role="menu"]');
 	    } // If there's no list it means it's not been rendered...
 
 
-	    if (!is$1.element(list)) {
+	    if (!is.element(list)) {
 	      return;
 	    } // Update the label
 
@@ -13277,7 +13251,7 @@ typeof navigator === "object" && (function () {
 
 	    var target = list && list.querySelector("[value=\"".concat(value, "\"]"));
 
-	    if (is$1.element(target)) {
+	    if (is.element(target)) {
 	      target.checked = true;
 	    }
 	  },
@@ -13285,11 +13259,11 @@ typeof navigator === "object" && (function () {
 	  getLabel: function getLabel(setting, value) {
 	    switch (setting) {
 	      case 'speed':
-	        return value === 1 ? i18n$1.get('normal', this.config) : "".concat(value, "&times;");
+	        return value === 1 ? i18n.get('normal', this.config) : "".concat(value, "&times;");
 
 	      case 'quality':
-	        if (is$1.number(value)) {
-	          var label = i18n$1.get("qualityLabel.".concat(value), this.config);
+	        if (is.number(value)) {
+	          var label = i18n.get("qualityLabel.".concat(value), this.config);
 
 	          if (!label.length) {
 	            return "".concat(value, "p");
@@ -13312,21 +13286,21 @@ typeof navigator === "object" && (function () {
 	    var _this6 = this;
 
 	    // Menu required
-	    if (!is$1.element(this.elements.settings.panels.quality)) {
+	    if (!is.element(this.elements.settings.panels.quality)) {
 	      return;
 	    }
 
 	    var type = 'quality';
 	    var list = this.elements.settings.panels.quality.querySelector('[role="menu"]'); // Set options if passed and filter based on uniqueness and config
 
-	    if (is$1.array(options)) {
+	    if (is.array(options)) {
 	      this.options.quality = dedupe(options).filter(function (quality) {
 	        return _this6.config.quality.options.includes(quality);
 	      });
 	    } // Toggle the pane and tab
 
 
-	    var toggle = !is$1.empty(this.options.quality) && this.options.quality.length > 1;
+	    var toggle = !is.empty(this.options.quality) && this.options.quality.length > 1;
 	    controls.toggleMenuButton.call(this, type, toggle); // Empty the menu
 
 	    emptyElement(list); // Check if we need to toggle the parent
@@ -13339,7 +13313,7 @@ typeof navigator === "object" && (function () {
 
 
 	    var getBadge = function getBadge(quality) {
-	      var label = i18n$1.get("qualityBadge.".concat(quality), _this6.config);
+	      var label = i18n.get("qualityBadge.".concat(quality), _this6.config);
 
 	      if (!label.length) {
 	        return null;
@@ -13406,7 +13380,7 @@ typeof navigator === "object" && (function () {
 	    var _this7 = this;
 
 	    // Menu required
-	    if (!is$1.element(this.elements.settings.panels.captions)) {
+	    if (!is.element(this.elements.settings.panels.captions)) {
 	      return;
 	    } // TODO: Captions or language? Currently it's mixed
 
@@ -13441,7 +13415,7 @@ typeof navigator === "object" && (function () {
 	    options.unshift({
 	      value: -1,
 	      checked: !this.captions.toggled,
-	      title: i18n$1.get('disabled', this.config),
+	      title: i18n.get('disabled', this.config),
 	      list: list,
 	      type: 'language'
 	    }); // Generate options
@@ -13454,7 +13428,7 @@ typeof navigator === "object" && (function () {
 	    var _this8 = this;
 
 	    // Menu required
-	    if (!is$1.element(this.elements.settings.panels.speed)) {
+	    if (!is.element(this.elements.settings.panels.speed)) {
 	      return;
 	    }
 
@@ -13465,7 +13439,7 @@ typeof navigator === "object" && (function () {
 	      return o >= _this8.minimumSpeed && o <= _this8.maximumSpeed;
 	    }); // Toggle the pane and tab
 
-	    var toggle = !is$1.empty(this.options.speed) && this.options.speed.length > 1;
+	    var toggle = !is.empty(this.options.speed) && this.options.speed.length > 1;
 	    controls.toggleMenuButton.call(this, type, toggle); // Empty the menu
 
 	    emptyElement(list); // Check if we need to toggle the parent
@@ -13490,7 +13464,7 @@ typeof navigator === "object" && (function () {
 	  // Check if we need to hide/show the settings menu
 	  checkMenu: function checkMenu() {
 	    var buttons = this.elements.settings.buttons;
-	    var visible = !is$1.empty(buttons) && Object.values(buttons).some(function (button) {
+	    var visible = !is.empty(buttons) && Object.values(buttons).some(function (button) {
 	      return !button.hidden;
 	    });
 	    toggleHidden(this.elements.settings.menu, !visible);
@@ -13505,7 +13479,7 @@ typeof navigator === "object" && (function () {
 
 	    var target = pane;
 
-	    if (!is$1.element(target)) {
+	    if (!is.element(target)) {
 	      target = Object.values(this.elements.settings.panels).find(function (p) {
 	        return !p.hidden;
 	      });
@@ -13519,7 +13493,7 @@ typeof navigator === "object" && (function () {
 	    var popup = this.elements.settings.popup;
 	    var button = this.elements.buttons.settings; // Menu and button are required
 
-	    if (!is$1.element(popup) || !is$1.element(button)) {
+	    if (!is.element(popup) || !is.element(button)) {
 	      return;
 	    } // True toggle by default
 
@@ -13527,14 +13501,14 @@ typeof navigator === "object" && (function () {
 	    var hidden = popup.hidden;
 	    var show = hidden;
 
-	    if (is$1.boolean(input)) {
+	    if (is.boolean(input)) {
 	      show = input;
-	    } else if (is$1.keyboardEvent(input) && input.which === 27) {
+	    } else if (is.keyboardEvent(input) && input.which === 27) {
 	      show = false;
-	    } else if (is$1.event(input)) {
+	    } else if (is.event(input)) {
 	      // If Plyr is in a shadowDOM, the event target is set to the component, instead of the
 	      // Element in the shadowDOM. The path, if available, is complete.
-	      var target = is$1.function(input.composedPath) ? input.composedPath()[0] : input.target;
+	      var target = is.function(input.composedPath) ? input.composedPath()[0] : input.target;
 	      var isMenuItem = popup.contains(target); // If the click was inside the menu or if the click
 	      // wasn't the button or menu item and we're trying to
 	      // show the menu (a doc click shouldn't show the menu)
@@ -13551,11 +13525,11 @@ typeof navigator === "object" && (function () {
 
 	    toggleClass(this.elements.container, this.config.classNames.menu.open, show); // Focus the first item if key interaction
 
-	    if (show && is$1.keyboardEvent(input)) {
+	    if (show && is.keyboardEvent(input)) {
 	      controls.focusFirstMenuItem.call(this, null, true);
 	    } else if (!show && !hidden) {
 	      // If closing, re-focus the button
-	      setFocus.call(this, button, is$1.keyboardEvent(input));
+	      setFocus.call(this, button, is.keyboardEvent(input));
 	    }
 	  },
 	  // Get the natural size of a menu panel
@@ -13584,7 +13558,7 @@ typeof navigator === "object" && (function () {
 	    var tabFocus = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 	    var target = this.elements.container.querySelector("#ggs-plyr-settings-".concat(this.id, "-").concat(type)); // Nothing to show, bail
 
-	    if (!is$1.element(target)) {
+	    if (!is.element(target)) {
 	      return;
 	    } // Hide all other panels
 
@@ -13632,7 +13606,7 @@ typeof navigator === "object" && (function () {
 	  setDownloadUrl: function setDownloadUrl() {
 	    var button = this.elements.buttons.download; // Bail if no button
 
-	    if (!is$1.element(button)) {
+	    if (!is.element(button)) {
 	      return;
 	    } // Set attribute
 
@@ -13653,7 +13627,7 @@ typeof navigator === "object" && (function () {
 	        showMenuPanel = controls.showMenuPanel;
 	    this.elements.controls = null; // Larger overlaid play button
 
-	    if (is$1.array(this.config.controls) && this.config.controls.includes('play-large')) {
+	    if (is.array(this.config.controls) && this.config.controls.includes('play-large')) {
 	      this.elements.container.appendChild(createButton.call(this, 'play-large'));
 	    } // Create the container
 
@@ -13665,7 +13639,7 @@ typeof navigator === "object" && (function () {
 	      class: 'ggs-plyr__controls__item'
 	    }; // Loop through controls in order
 
-	    dedupe(is$1.array(this.config.controls) ? this.config.controls : []).forEach(function (control) {
+	    dedupe(is.array(this.config.controls) ? this.config.controls : []).forEach(function (control) {
 	      // Restart button
 	      if (control === 'restart') {
 	        container.appendChild(createButton.call(_this10, 'restart', defaultAttributes));
@@ -13727,7 +13701,7 @@ typeof navigator === "object" && (function () {
 	      if (control === 'mute' || control === 'volume') {
 	        var volume = _this10.elements.volume; // Create the volume container if needed
 
-	        if (!is$1.element(volume) || !container.contains(volume)) {
+	        if (!is.element(volume) || !container.contains(volume)) {
 	          volume = createElement('div', extend({}, defaultAttributes, {
 	            class: "".concat(defaultAttributes.class, " ggs-plyr__volume").trim()
 	          }));
@@ -13763,7 +13737,7 @@ typeof navigator === "object" && (function () {
 	      } // Settings button / menu
 
 
-	      if (control === 'settings' && !is$1.empty(_this10.config.settings)) {
+	      if (control === 'settings' && !is.empty(_this10.config.settings)) {
 	        var wrapper = createElement('div', extend({}, defaultAttributes, {
 	          class: "".concat(defaultAttributes.class, " ggs-plyr__menu").trim(),
 	          hidden: ''
@@ -13805,7 +13779,7 @@ typeof navigator === "object" && (function () {
 	          on.call(_this10, menuItem, 'click', function () {
 	            showMenuPanel.call(_this10, type, false);
 	          });
-	          var flex = createElement('span', null, i18n$1.get(type, _this10.config));
+	          var flex = createElement('span', null, i18n.get(type, _this10.config));
 	          var value = createElement('span', {
 	            class: _this10.config.classNames.menu.value
 	          }); // Speed contains HTML entities
@@ -13827,11 +13801,11 @@ typeof navigator === "object" && (function () {
 
 	          backButton.appendChild(createElement('span', {
 	            'aria-hidden': true
-	          }, i18n$1.get(type, _this10.config))); // Screen reader label
+	          }, i18n.get(type, _this10.config))); // Screen reader label
 
 	          backButton.appendChild(createElement('span', {
 	            class: _this10.config.classNames.hidden
-	          }, i18n$1.get('menuBack', _this10.config))); // Go back via keyboard
+	          }, i18n.get('menuBack', _this10.config))); // Go back via keyboard
 
 	          on.call(_this10, pane, 'keydown', function (event) {
 	            // We only care about <-
@@ -13892,7 +13866,7 @@ typeof navigator === "object" && (function () {
 
 	        var download = _this10.config.urls.download;
 
-	        if (!is$1.url(download) && _this10.isEmbed) {
+	        if (!is.url(download) && _this10.isEmbed) {
 	          extend(_attributes, {
 	            icon: "logo-".concat(_this10.provider),
 	            label: _this10.provider
@@ -13941,7 +13915,7 @@ typeof navigator === "object" && (function () {
 	    };
 	    var update = true; // If function, run it and use output
 
-	    if (is$1.function(this.config.controls)) {
+	    if (is.function(this.config.controls)) {
 	      this.config.controls = this.config.controls.call(this, props);
 	    } // Convert falsy controls to empty array (primarily for empty strings)
 
@@ -13950,7 +13924,7 @@ typeof navigator === "object" && (function () {
 	      this.config.controls = [];
 	    }
 
-	    if (is$1.element(this.config.controls) || is$1.string(this.config.controls)) {
+	    if (is.element(this.config.controls) || is.string(this.config.controls)) {
 	      // HTMLElement or Non-empty string passed as the option
 	      container = this.config.controls;
 	    } else {
@@ -13982,7 +13956,7 @@ typeof navigator === "object" && (function () {
 
 
 	    if (update) {
-	      if (is$1.string(this.config.controls)) {
+	      if (is.string(this.config.controls)) {
 	        container = replace(container);
 	      }
 	    } // Controls container
@@ -13990,25 +13964,25 @@ typeof navigator === "object" && (function () {
 
 	    var target; // Inject to custom location
 
-	    if (is$1.string(this.config.selectors.controls.container)) {
+	    if (is.string(this.config.selectors.controls.container)) {
 	      target = document.querySelector(this.config.selectors.controls.container);
 	    } // Inject into the container by default
 
 
-	    if (!is$1.element(target)) {
+	    if (!is.element(target)) {
 	      target = this.elements.container;
 	    } // Inject controls HTML (needs to be before captions, hence "afterbegin")
 
 
-	    var insertMethod = is$1.element(container) ? 'insertAdjacentElement' : 'insertAdjacentHTML';
+	    var insertMethod = is.element(container) ? 'insertAdjacentElement' : 'insertAdjacentHTML';
 	    target[insertMethod]('afterbegin', container); // Find the elements if need be
 
-	    if (!is$1.element(this.elements.controls)) {
+	    if (!is.element(this.elements.controls)) {
 	      controls.findElements.call(this);
 	    } // Add pressed property to buttons
 
 
-	    if (!is$1.empty(this.elements.buttons)) {
+	    if (!is.empty(this.elements.buttons)) {
 	      var addProperty = function addProperty(button) {
 	        var className = _this11.config.classNames.controlPressed;
 	        Object.defineProperty(button, 'pressed', {
@@ -14025,7 +13999,7 @@ typeof navigator === "object" && (function () {
 
 
 	      Object.values(this.elements.buttons).filter(Boolean).forEach(function (button) {
-	        if (is$1.array(button) || is$1.nodeList(button)) {
+	        if (is.array(button) || is.nodeList(button)) {
 	          Array.from(button).filter(Boolean).forEach(addProperty);
 	        } else {
 	          addProperty(button);
@@ -14087,7 +14061,7 @@ typeof navigator === "object" && (function () {
 	      } // Ignore double click in controls
 
 
-	      if (is$1.element(_this.player.elements.controls) && _this.player.elements.controls.contains(event.target)) {
+	      if (is.element(_this.player.elements.controls) && _this.player.elements.controls.contains(event.target)) {
 	        return;
 	      }
 
@@ -14112,7 +14086,7 @@ typeof navigator === "object" && (function () {
 
 	      var button = this.player.elements.buttons.fullscreen;
 
-	      if (is$1.element(button)) {
+	      if (is.element(button)) {
 	        button.pressed = this.active;
 	      } // Always trigger events on the plyr / media element (not a fullscreen container) and let them bubble up
 
@@ -14156,7 +14130,7 @@ typeof navigator === "object" && (function () {
 	        } // Check if the property already exists
 
 
-	        var hasProperty = is$1.string(viewport.content) && viewport.content.includes(property);
+	        var hasProperty = is.string(viewport.content) && viewport.content.includes(property);
 
 	        if (toggle) {
 	          this.cleanupViewport = !hasProperty;
@@ -14242,7 +14216,7 @@ typeof navigator === "object" && (function () {
 	        this.target.requestFullscreen({
 	          navigationUI: 'hide'
 	        });
-	      } else if (!is$1.empty(this.prefix)) {
+	      } else if (!is.empty(this.prefix)) {
 	        this.target["".concat(this.prefix, "Request").concat(this.property)]();
 	      }
 	    } // Bail from fullscreen
@@ -14262,7 +14236,7 @@ typeof navigator === "object" && (function () {
 	        this.toggleFallback(false);
 	      } else if (!this.prefix) {
 	        (document.cancelFullScreen || document.exitFullscreen).call(document);
-	      } else if (!is$1.empty(this.prefix)) {
+	      } else if (!is.empty(this.prefix)) {
 	        var action = this.prefix === 'moz' ? 'Cancel' : 'Exit';
 	        document["".concat(this.prefix).concat(action).concat(this.property)]();
 	      }
@@ -14321,7 +14295,7 @@ typeof navigator === "object" && (function () {
 	    key: "prefix",
 	    get: function get() {
 	      // No prefix
-	      if (is$1.function(document.exitFullscreen)) {
+	      if (is.function(document.exitFullscreen)) {
 	        return '';
 	      } // Check for fullscreen support by vendor prefix
 
@@ -14329,7 +14303,7 @@ typeof navigator === "object" && (function () {
 	      var value = '';
 	      var prefixes = ['webkit', 'moz', 'ms'];
 	      prefixes.some(function (pre) {
-	        if (is$1.function(document["".concat(pre, "ExitFullscreen")]) || is$1.function(document["".concat(pre, "CancelFullScreen")])) {
+	        if (is.function(document["".concat(pre, "ExitFullscreen")]) || is.function(document["".concat(pre, "CancelFullScreen")])) {
 	          value = pre;
 	          return true;
 	        }
@@ -14417,7 +14391,7 @@ typeof navigator === "object" && (function () {
 	    } // Inject custom controls if not present
 
 
-	    if (!is$1.element(this.elements.controls)) {
+	    if (!is.element(this.elements.controls)) {
 	      // Inject custom controls
 	      controls.inject.call(this); // Re-attach control listeners
 
@@ -14477,9 +14451,9 @@ typeof navigator === "object" && (function () {
 	  // Setup aria attribute for play and iframe title
 	  setTitle: function setTitle() {
 	    // Find the current text
-	    var label = i18n$1.get('play', this.config); // If there's a media title set, use that for the label
+	    var label = i18n.get('play', this.config); // If there's a media title set, use that for the label
 
-	    if (is$1.string(this.config.title) && !is$1.empty(this.config.title)) {
+	    if (is.string(this.config.title) && !is.empty(this.config.title)) {
 	      label += ", ".concat(this.config.title);
 	    } // If there's a play button, set label
 
@@ -14492,13 +14466,13 @@ typeof navigator === "object" && (function () {
 	    if (this.isEmbed) {
 	      var iframe = getElement.call(this, 'iframe');
 
-	      if (!is$1.element(iframe)) {
+	      if (!is.element(iframe)) {
 	        return;
 	      } // Default to media type
 
 
-	      var title = !is$1.empty(this.config.title) ? this.config.title : 'video';
-	      var format = i18n$1.get('frameTitle', this.config);
+	      var title = !is.empty(this.config.title) ? this.config.title : 'video';
+	      var format = i18n.get('frameTitle', this.config);
 	      iframe.setAttribute('title', format.replace('{title}', title));
 	    }
 	  },
@@ -14561,10 +14535,10 @@ typeof navigator === "object" && (function () {
 	      Object.assign(target, {
 	        pressed: _this3.playing
 	      });
-	      target.setAttribute('aria-label', i18n$1.get(_this3.playing ? 'pause' : 'play', _this3.config));
+	      target.setAttribute('aria-label', i18n.get(_this3.playing ? 'pause' : 'play', _this3.config));
 	    }); // Only update controls on non timeupdate events
 
-	    if (is$1.event(event) && event.type === 'timeupdate') {
+	    if (is.event(event) && event.type === 'timeupdate') {
 	      return;
 	    } // Toggle controls
 
@@ -14604,7 +14578,7 @@ typeof navigator === "object" && (function () {
 	    // Loop through values (as they are the keys when the object is spread 🤔)
 	    Object.values(_objectSpread2({}, this.media.style)) // We're only fussed about Plyr specific properties
 	    .filter(function (key) {
-	      return !is$1.empty(key) && is$1.string(key) && key.startsWith('--plyr');
+	      return !is.empty(key) && is.string(key) && key.startsWith('--plyr');
 	    }).forEach(function (key) {
 	      // Set on the container
 	      _this5.elements.container.style.setProperty(key, _this5.media.style.getPropertyValue(key), 'important'); // Clean up from media element
@@ -14613,7 +14587,7 @@ typeof navigator === "object" && (function () {
 	      _this5.media.style.removeProperty(key);
 	    }); // Remove attribute if empty
 
-	    if (is$1.empty(this.media.style)) {
+	    if (is.empty(this.media.style)) {
 	      this.media.removeAttribute('style');
 	    }
 	  }
@@ -14649,7 +14623,7 @@ typeof navigator === "object" && (function () {
 	      // Firefox doesn't get the keycode for whatever reason
 
 
-	      if (!is$1.number(code)) {
+	      if (!is.number(code)) {
 	        return;
 	      } // Seek by the number keys
 
@@ -14667,7 +14641,7 @@ typeof navigator === "object" && (function () {
 	        // and any that accept key input http://webaim.org/techniques/keyboard/
 	        var focused = document.activeElement;
 
-	        if (is$1.element(focused)) {
+	        if (is.element(focused)) {
 	          var editable = player.config.selectors.editable;
 	          var seek = elements.inputs.seek;
 
@@ -14946,7 +14920,7 @@ typeof navigator === "object" && (function () {
 	        } // If it's not an embed and no ratio specified
 
 
-	        if (!player.isEmbed && is$1.empty(player.config.ratio)) {
+	        if (!player.isEmbed && is.empty(player.config.ratio)) {
 	          return;
 	        }
 
@@ -15022,7 +14996,7 @@ typeof navigator === "object" && (function () {
 	        // Re-fetch the wrapper
 	        var wrapper = getElement.call(player, ".".concat(player.config.classNames.video)); // Bail if there's no wrapper (this should never happen)
 
-	        if (!is$1.element(wrapper)) {
+	        if (!is.element(wrapper)) {
 	          return;
 	        } // On click play, pause or restart
 
@@ -15107,7 +15081,7 @@ typeof navigator === "object" && (function () {
 	    value: function proxy(event, defaultHandler, customHandlerKey) {
 	      var player = this.player;
 	      var customHandler = player.config.listeners[customHandlerKey];
-	      var hasCustomHandler = is$1.function(customHandler);
+	      var hasCustomHandler = is.function(customHandler);
 	      var returned = true; // Execute custom handler
 
 	      if (hasCustomHandler) {
@@ -15115,7 +15089,7 @@ typeof navigator === "object" && (function () {
 	      } // Only call default handler if not prevented in custom handler
 
 
-	      if (returned !== false && is$1.function(defaultHandler)) {
+	      if (returned !== false && is.function(defaultHandler)) {
 	        defaultHandler.call(player, event);
 	      }
 	    } // Trigger custom and default handlers
@@ -15128,7 +15102,7 @@ typeof navigator === "object" && (function () {
 	      var passive = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
 	      var player = this.player;
 	      var customHandler = player.config.listeners[customHandlerKey];
-	      var hasCustomHandler = is$1.function(customHandler);
+	      var hasCustomHandler = is.function(customHandler);
 	      on.call(player, element, type, function (event) {
 	        return _this2.proxy(event, defaultHandler, customHandlerKey);
 	      }, passive && !hasCustomHandler);
@@ -15240,7 +15214,7 @@ typeof navigator === "object" && (function () {
 	        var code = event.keyCode ? event.keyCode : event.which;
 	        var attribute = 'play-on-seeked';
 
-	        if (is$1.keyboardEvent(event) && code !== 39 && code !== 37) {
+	        if (is.keyboardEvent(event) && code !== 39 && code !== 37) {
 	          return;
 	        } // Record seek time so we can prevent hiding controls for a few seconds after seek
 
@@ -15277,7 +15251,7 @@ typeof navigator === "object" && (function () {
 
 	        var seekTo = seek.getAttribute('seek-value');
 
-	        if (is$1.empty(seekTo)) {
+	        if (is.empty(seekTo)) {
 	          seekTo = seek.value;
 	        }
 
@@ -15331,7 +15305,7 @@ typeof navigator === "object" && (function () {
 	      // Only if one time element is used for both currentTime and duration
 
 
-	      if (player.config.toggleInvert && !is$1.element(elements.display.duration)) {
+	      if (player.config.toggleInvert && !is.element(elements.display.duration)) {
 	        this.bind(elements.display.currentTime, 'click', function () {
 	          // Do nothing if we're at the start
 	          if (player.currentTime === 0) {
@@ -15512,11 +15486,11 @@ typeof navigator === "object" && (function () {
 	  insertElements: function insertElements(type, attributes) {
 	    var _this = this;
 
-	    if (is$1.string(attributes)) {
+	    if (is.string(attributes)) {
 	      insertElement(type, this.media, {
 	        src: attributes
 	      });
-	    } else if (is$1.array(attributes)) {
+	    } else if (is.array(attributes)) {
 	      attributes.forEach(function (attribute) {
 	        insertElement(type, _this.media, attribute);
 	      });
@@ -15542,7 +15516,7 @@ typeof navigator === "object" && (function () {
 	      removeElement(_this2.media);
 	      _this2.media = null; // Reset class name
 
-	      if (is$1.element(_this2.elements.container)) {
+	      if (is.element(_this2.elements.container)) {
 	        _this2.elements.container.removeAttribute('class');
 	      } // Set the type and provider
 
@@ -15572,7 +15546,7 @@ typeof navigator === "object" && (function () {
 	      _this2.elements.container.appendChild(_this2.media); // Autoplay the new source?
 
 
-	      if (is$1.boolean(input.autoplay)) {
+	      if (is.boolean(input.autoplay)) {
 	        _this2.config.autoplay = input.autoplay;
 	      } // Set attributes for audio and video
 
@@ -15586,7 +15560,7 @@ typeof navigator === "object" && (function () {
 	          _this2.media.setAttribute('autoplay', '');
 	        }
 
-	        if (!is$1.empty(input.poster)) {
+	        if (!is.empty(input.poster)) {
 	          _this2.poster = input.poster;
 	        }
 
@@ -15634,7 +15608,7 @@ typeof navigator === "object" && (function () {
 	      } // Update previewThumbnails config & reload plugin
 
 
-	      if (!is$1.empty(input.previewThumbnails)) {
+	      if (!is.empty(input.previewThumbnails)) {
 	        Object.assign(_this2.config.previewThumbnails, input.previewThumbnails); // Cleanup previewThumbnails plugin if it was loaded
 
 	        if (_this2.previewThumbnails && _this2.previewThumbnails.loaded) {
@@ -15707,7 +15681,7 @@ typeof navigator === "object" && (function () {
 	var myDumpProgress = document.createElement('progress');
 
 	var myIsElm = function myIsElm(v) {
-	  return is$1.element(v);
+	  return is.element(v);
 	};
 
 	var myIsVideo = function myIsVideo(v) {
@@ -15731,8 +15705,8 @@ typeof navigator === "object" && (function () {
 	};
 
 	var myMock = function myMock(obj) {
-	  var keys = is$1.array(obj) ? Object.keys(obj) : Object.getOwnPropertyNames(obj);
-	  var dumb = is$1.array(obj) ? [] : {};
+	  var keys = is.array(obj) ? Object.keys(obj) : Object.getOwnPropertyNames(obj);
+	  var dumb = is.array(obj) ? [] : {};
 
 	  for (var index = 0, length = keys.length; index !== length; index += 1) {
 	    var key = keys[index];
@@ -15760,12 +15734,12 @@ typeof navigator === "object" && (function () {
 
 	    this.media = target; // String selector passed
 
-	    if (is$1.string(this.media)) {
+	    if (is.string(this.media)) {
 	      this.media = document.querySelectorAll(this.media);
 	    } // jQuery, NodeList or Array passed, use first element
 
 
-	    if (window.jQuery && this.media instanceof jQuery || is$1.nodeList(this.media) || is$1.array(this.media)) {
+	    if (window.jQuery && this.media instanceof jQuery || is.nodeList(this.media) || is.array(this.media)) {
 	      // eslint-disable-next-line
 	      this.media = this.media[0];
 	    } // Set config
@@ -15816,7 +15790,7 @@ typeof navigator === "object" && (function () {
 	    this.debug.log('Config', this.config);
 	    this.debug.log('Support', support); // We need an element to setup
 
-	    if (is$1.nullOrUndefined(this.media) || !is$1.element(this.media)) {
+	    if (is.nullOrUndefined(this.media) || !is.element(this.media)) {
 	      this.debug.error('Setup failed: no suitable element passed');
 	      return;
 	    } // Bail if the element is initialized
@@ -15856,7 +15830,7 @@ typeof navigator === "object" && (function () {
 	        // Find the frame
 	        iframe = this.media.querySelector('iframe'); // <iframe> type
 
-	        if (is$1.element(iframe)) {
+	        if (is.element(iframe)) {
 	          // Detect provider
 	          url = parseUrl(iframe.getAttribute('src'));
 	          this.provider = getProviderByUrl(url.toString()); // Rework elements
@@ -15894,7 +15868,7 @@ typeof navigator === "object" && (function () {
 	        } // Unsupported or missing provider
 
 
-	        if (is$1.empty(this.provider) || !Object.keys(providers).includes(this.provider)) {
+	        if (is.empty(this.provider) || !Object.keys(providers).includes(this.provider)) {
 	          this.debug.error('Setup failed: Invalid provider');
 	          return;
 	        } // Audio will come later for external providers
@@ -15951,7 +15925,7 @@ typeof navigator === "object" && (function () {
 
 	    this.media.plyr = this; // Wrap media
 
-	    if (!is$1.element(this.elements.container)) {
+	    if (!is.element(this.elements.container)) {
 	      this.elements.container = createElement('div', {
 	        tabindex: 0
 	      });
@@ -16019,7 +15993,7 @@ typeof navigator === "object" && (function () {
 	    value: function play() {
 	      var _this2 = this;
 
-	      if (!is$1.function(this.media.play)) {
+	      if (!is.function(this.media.play)) {
 	        return null;
 	      } // Intecept play with ads
 
@@ -16042,7 +16016,7 @@ typeof navigator === "object" && (function () {
 	  }, {
 	    key: "pause",
 	    value: function pause() {
-	      if (!this.playing || !is$1.function(this.media.pause)) {
+	      if (!this.playing || !is.function(this.media.pause)) {
 	        return null;
 	      }
 
@@ -16061,7 +16035,7 @@ typeof navigator === "object" && (function () {
 	     */
 	    value: function togglePlay(input) {
 	      // Toggle based on current state if nothing passed
-	      var toggle = is$1.boolean(input) ? input : !this.playing;
+	      var toggle = is.boolean(input) ? input : !this.playing;
 
 	      if (toggle) {
 	        return this.play();
@@ -16079,7 +16053,7 @@ typeof navigator === "object" && (function () {
 	      if (this.isHTML5) {
 	        this.pause();
 	        this.restart();
-	      } else if (is$1.function(this.media.stop)) {
+	      } else if (is.function(this.media.stop)) {
 	        this.media.stop();
 	      }
 	    }
@@ -16100,7 +16074,7 @@ typeof navigator === "object" && (function () {
 	  }, {
 	    key: "rewind",
 	    value: function rewind(seekTime) {
-	      this.currentTime -= is$1.number(seekTime) ? seekTime : this.config.seekTime;
+	      this.currentTime -= is.number(seekTime) ? seekTime : this.config.seekTime;
 	    }
 	    /**
 	     * Fast forward
@@ -16110,7 +16084,7 @@ typeof navigator === "object" && (function () {
 	  }, {
 	    key: "forward",
 	    value: function forward(seekTime) {
-	      this.currentTime += is$1.number(seekTime) ? seekTime : this.config.seekTime;
+	      this.currentTime += is.number(seekTime) ? seekTime : this.config.seekTime;
 	    }
 	    /**
 	     * Seek to a time
@@ -16126,7 +16100,7 @@ typeof navigator === "object" && (function () {
 	     */
 	    value: function increaseVolume(step) {
 	      var volume = this.media.muted ? 0 : this.volume;
-	      this.volume = volume + (is$1.number(step) ? step : 0);
+	      this.volume = volume + (is.number(step) ? step : 0);
 	    }
 	    /**
 	     * Decrease volume
@@ -16188,7 +16162,7 @@ typeof navigator === "object" && (function () {
 
 	        var hiding = toggleClass(this.elements.container, this.config.classNames.hideControls, force); // Close menu
 
-	        if (hiding && is$1.array(this.config.controls) && this.config.controls.includes('settings') && !is$1.empty(this.config.settings)) {
+	        if (hiding && is.array(this.config.controls) && this.config.controls.includes('settings') && !is.empty(this.config.settings)) {
 	          controls.toggleMenu.call(this, false);
 	        } // Trigger event on change
 
@@ -16276,7 +16250,7 @@ typeof navigator === "object" && (function () {
 	          } // Callback
 
 
-	          if (is$1.function(callback)) {
+	          if (is.function(callback)) {
 	            callback();
 	          }
 	        } else {
@@ -16289,7 +16263,7 @@ typeof navigator === "object" && (function () {
 
 	          triggerEvent.call(_this3, _this3.elements.original, 'destroyed', true); // Callback
 
-	          if (is$1.function(callback)) {
+	          if (is.function(callback)) {
 	            callback.call(_this3.elements.original);
 	          } // Reset state
 
@@ -16318,7 +16292,7 @@ typeof navigator === "object" && (function () {
 	        clearInterval(this.timers.buffering);
 	        clearInterval(this.timers.playing); // Destroy YouTube API
 
-	        if (this.embed !== null && is$1.function(this.embed.destroy)) {
+	        if (this.embed !== null && is.function(this.embed.destroy)) {
 	          this.embed.destroy();
 	        } // Clean up
 
@@ -16423,7 +16397,7 @@ typeof navigator === "object" && (function () {
 	      } // Validate input
 
 
-	      var inputIsValid = is$1.number(input) && input > 0; // Set
+	      var inputIsValid = is.number(input) && input > 0; // Set
 
 	      this.media.currentTime = inputIsValid ? Math.min(input, this.duration) : 0; // Logging
 
@@ -16445,7 +16419,7 @@ typeof navigator === "object" && (function () {
 	    get: function get() {
 	      var buffered = this.media.buffered; // YouTube / Vimeo return a float between 0-1
 
-	      if (is$1.number(buffered)) {
+	      if (is.number(buffered)) {
 	        return buffered;
 	      } // HTML5
 	      // TODO: Handle buffered chunks of the media
@@ -16478,7 +16452,7 @@ typeof navigator === "object" && (function () {
 	      var fauxDuration = parseFloat(this.config.duration); // Media duration can be NaN or Infinity before the media has loaded
 
 	      var realDuration = (this.media || {}).duration;
-	      var duration = !is$1.number(realDuration) || realDuration === Infinity ? 0 : realDuration; // If config duration is funky, use regular duration
+	      var duration = !is.number(realDuration) || realDuration === Infinity ? 0 : realDuration; // If config duration is funky, use regular duration
 
 	      return fauxDuration || duration;
 	    }
@@ -16494,17 +16468,17 @@ typeof navigator === "object" && (function () {
 	      var max = 1;
 	      var min = 0;
 
-	      if (is$1.string(volume)) {
+	      if (is.string(volume)) {
 	        volume = Number(volume);
 	      } // Load volume from storage if no value specified
 
 
-	      if (!is$1.number(volume)) {
+	      if (!is.number(volume)) {
 	        volume = this.storage.get('volume');
 	      } // Use config if all else fails
 
 
-	      if (!is$1.number(volume)) {
+	      if (!is.number(volume)) {
 	        volume = this.config.volume;
 	      } // Maximum is volumeMax
 
@@ -16523,7 +16497,7 @@ typeof navigator === "object" && (function () {
 
 	      this.media.volume = volume; // If muted, and we're increasing volume manually, reset muted state
 
-	      if (!is$1.empty(value) && this.muted && volume > 0) {
+	      if (!is.empty(value) && this.muted && volume > 0) {
 	        this.muted = false;
 	      }
 	    }
@@ -16539,12 +16513,12 @@ typeof navigator === "object" && (function () {
 	    set: function set(mute) {
 	      var toggle = mute; // Load muted state from storage
 
-	      if (!is$1.boolean(toggle)) {
+	      if (!is.boolean(toggle)) {
 	        toggle = this.storage.get('muted');
 	      } // Use config if all else fails
 
 
-	      if (!is$1.boolean(toggle)) {
+	      if (!is.boolean(toggle)) {
 	        toggle = this.config.muted;
 	      } // Update config
 
@@ -16591,15 +16565,15 @@ typeof navigator === "object" && (function () {
 
 	      var speed = null;
 
-	      if (is$1.number(input)) {
+	      if (is.number(input)) {
 	        speed = input;
 	      }
 
-	      if (!is$1.number(speed)) {
+	      if (!is.number(speed)) {
 	        speed = this.storage.get('speed');
 	      }
 
-	      if (!is$1.number(speed)) {
+	      if (!is.number(speed)) {
 	        speed = this.config.speed.selected;
 	      } // Clamp to min/max
 
@@ -16677,7 +16651,7 @@ typeof navigator === "object" && (function () {
 	        return;
 	      }
 
-	      var quality = [!is$1.empty(input) && Number(input), this.storage.get('quality'), config.selected, config.default].find(is$1.number);
+	      var quality = [!is.empty(input) && Number(input), this.storage.get('quality'), config.selected, config.default].find(is.number);
 	      var updateStorage = true;
 
 	      if (!options.includes(quality)) {
@@ -16715,7 +16689,7 @@ typeof navigator === "object" && (function () {
 	  }, {
 	    key: "loop",
 	    set: function set(input) {
-	      var toggle = is$1.boolean(input) ? input : this.config.loop.active;
+	      var toggle = is.boolean(input) ? input : this.config.loop.active;
 	      this.config.loop.active = toggle;
 	      this.media.loop = toggle; // Set default to be a true toggle
 
@@ -16788,14 +16762,14 @@ typeof navigator === "object" && (function () {
 	    key: "download",
 	    get: function get() {
 	      var download = this.config.urls.download;
-	      return is$1.url(download) ? download : this.source;
+	      return is.url(download) ? download : this.source;
 	    }
 	    /**
 	     * Set the download URL
 	     */
 	    ,
 	    set: function set(input) {
-	      if (!is$1.url(input)) {
+	      if (!is.url(input)) {
 	        return;
 	      }
 
@@ -16840,7 +16814,7 @@ typeof navigator === "object" && (function () {
 	      }
 
 	      var ratio = reduceAspectRatio(getAspectRatio.call(this));
-	      return is$1.array(ratio) ? ratio.join(':') : ratio;
+	      return is.array(ratio) ? ratio.join(':') : ratio;
 	    }
 	    /**
 	     * Set video aspect ratio
@@ -16852,7 +16826,7 @@ typeof navigator === "object" && (function () {
 	        return;
 	      }
 
-	      if (!is$1.string(input) || !validateRatio(input)) {
+	      if (!is.string(input) || !validateRatio(input)) {
 	        this.debug.error("Invalid aspect ratio specified (".concat(input, ")"));
 	        return;
 	      }
@@ -16868,7 +16842,7 @@ typeof navigator === "object" && (function () {
 	  }, {
 	    key: "autoplay",
 	    set: function set(input) {
-	      var toggle = is$1.boolean(input) ? input : this.config.autoplay;
+	      var toggle = is.boolean(input) ? input : this.config.autoplay;
 	      this.config.autoplay = toggle;
 	    }
 	    /**
@@ -16926,15 +16900,15 @@ typeof navigator === "object" && (function () {
 	      } // Toggle based on current state if not passed
 
 
-	      var toggle = is$1.boolean(input) ? input : !this.pip; // Toggle based on current state
+	      var toggle = is.boolean(input) ? input : !this.pip; // Toggle based on current state
 	      // Safari
 
-	      if (is$1.function(this.media.webkitSetPresentationMode)) {
+	      if (is.function(this.media.webkitSetPresentationMode)) {
 	        this.media.webkitSetPresentationMode(toggle ? pip.active : pip.inactive);
 	      } // Chrome
 
 
-	      if (is$1.function(this.media.requestPictureInPicture)) {
+	      if (is.function(this.media.requestPictureInPicture)) {
 	        if (!this.pip && toggle) {
 	          this.media.requestPictureInPicture();
 	        } else if (this.pip && !toggle) {
@@ -16952,7 +16926,7 @@ typeof navigator === "object" && (function () {
 	      } // Safari
 
 
-	      if (!is$1.empty(this.media.webkitPresentationMode)) {
+	      if (!is.empty(this.media.webkitPresentationMode)) {
 	        return this.media.webkitPresentationMode === pip.active;
 	      } // Chrome
 
@@ -16987,15 +16961,15 @@ typeof navigator === "object" && (function () {
 	      var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 	      var targets = null;
 
-	      if (is$1.string(selector)) {
+	      if (is.string(selector)) {
 	        targets = Array.from(document.querySelectorAll(selector));
-	      } else if (is$1.nodeList(selector)) {
+	      } else if (is.nodeList(selector)) {
 	        targets = Array.from(selector);
-	      } else if (is$1.array(selector)) {
-	        targets = selector.filter(is$1.element);
+	      } else if (is.array(selector)) {
+	        targets = selector.filter(is.element);
 	      }
 
-	      if (is$1.empty(targets)) {
+	      if (is.empty(targets)) {
 	        return null;
 	      }
 
