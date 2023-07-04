@@ -1537,12 +1537,6 @@ nav {
   .ggsi .ggs-plyr--video .ggs-plyr__progress__buffer {
     color: rgba(255, 255, 255, 0.25) !important;
     color: var(--plyr-video-progress-buffered-background, rgba(255, 255, 255, 0.25)) !important; }
-  .ggsi .ggs-plyr:-webkit-full-screen {
-    background: #000 !important;
-    border-radius: 0 !important;
-    height: 100% !important;
-    margin: 0 !important;
-    width: 100% !important; }
   .ggsi .ggs-plyr:-ms-fullscreen {
     background: #000 !important;
     border-radius: 0 !important;
@@ -1555,44 +1549,30 @@ nav {
     height: 100% !important;
     margin: 0 !important;
     width: 100% !important; }
-    .ggsi .ggs-plyr:-webkit-full-screen video {
-      height: 100% !important; }
     .ggsi .ggs-plyr:-ms-fullscreen video {
       height: 100% !important; }
     .ggsi .ggs-plyr:fullscreen video {
       height: 100% !important; }
-    .ggsi .ggs-plyr:-webkit-full-screen .ggs-plyr__video-wrapper {
-      height: 100% !important;
-      position: static !important; }
     .ggsi .ggs-plyr:-ms-fullscreen .ggs-plyr__video-wrapper {
       height: 100% !important;
       position: static !important; }
     .ggsi .ggs-plyr:fullscreen .ggs-plyr__video-wrapper {
       height: 100% !important;
       position: static !important; }
-    .ggsi .ggs-plyr:-webkit-full-screen.ggs-plyr--vimeo .ggs-plyr__video-wrapper {
-      height: 0 !important;
-      position: relative !important; }
     .ggsi .ggs-plyr:-ms-fullscreen.ggs-plyr--vimeo .ggs-plyr__video-wrapper {
       height: 0 !important;
       position: relative !important; }
     .ggsi .ggs-plyr:fullscreen.ggs-plyr--vimeo .ggs-plyr__video-wrapper {
       height: 0 !important;
       position: relative !important; }
-    .ggsi .ggs-plyr:-webkit-full-screen .ggs-plyr__control .icon--exit-fullscreen {
-      display: block !important; }
     .ggsi .ggs-plyr:-ms-fullscreen .ggs-plyr__control .icon--exit-fullscreen {
       display: block !important; }
     .ggsi .ggs-plyr:fullscreen .ggs-plyr__control .icon--exit-fullscreen {
       display: block !important; }
-      .ggsi .ggs-plyr:-webkit-full-screen .ggs-plyr__control .icon--exit-fullscreen + svg {
-        display: none !important; }
       .ggsi .ggs-plyr:-ms-fullscreen .ggs-plyr__control .icon--exit-fullscreen + svg {
         display: none !important; }
       .ggsi .ggs-plyr:fullscreen .ggs-plyr__control .icon--exit-fullscreen + svg {
         display: none !important; }
-    .ggsi .ggs-plyr:-webkit-full-screen.ggs-plyr--hide-controls {
-      cursor: none !important; }
     .ggsi .ggs-plyr:-ms-fullscreen.ggs-plyr--hide-controls {
       cursor: none !important; }
     .ggsi .ggs-plyr:fullscreen.ggs-plyr--hide-controls {
