@@ -7,15 +7,17 @@ function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToAr
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty2(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
 function _classCallCheck2(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor); } }
 function _createClass2(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
+function _iterableToArrayLimit(arr, i) { var _i = null == arr ? null : "undefined" != typeof Symbol && arr[Symbol.iterator] || arr["@@iterator"]; if (null != _i) { var _s, _e, _x, _r, _arr = [], _n = !0, _d = !1; try { if (_x = (_i = _i.call(arr)).next, 0 === i) { if (Object(_i) !== _i) return; _n = !1; } else for (; !(_n = (_s = _x.call(_i)).done) && (_arr.push(_s.value), _arr.length !== i); _n = !0); } catch (err) { _d = !0, _e = err; } finally { try { if (!_n && null != _i.return && (_r = _i.return(), Object(_r) !== _r)) return; } finally { if (_d) throw _e; } } return _arr; } }
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-function _defineProperty2(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _defineProperty2(obj, key, value) { key = _toPropertyKey(key); if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return _typeof(key) === "symbol" ? key : String(key); }
+function _toPrimitive(input, hint) { if (_typeof(input) !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (_typeof(res) !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); }
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
 (typeof navigator === "undefined" ? "undefined" : _typeof(navigator)) === "object" && function (global, factory) {
   (typeof exports === "undefined" ? "undefined" : _typeof(exports)) === 'object' && typeof module !== 'undefined' ? module.exports = factory() : typeof define === 'function' && define.amd ? define('Plyr', factory) : (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Plyr = factory());
@@ -126,6 +128,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   };
 
   // ==========================================================================
+  // Object utils
+  // ==========================================================================
 
   // Clone nested objects
   function cloneDeep(object) {
@@ -165,6 +169,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     return extend.apply(void 0, [target].concat(sources));
   }
 
+  // ==========================================================================
+  // String utils
   // ==========================================================================
 
   // Get percentage
@@ -222,6 +228,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   // ==========================================================================
+  // Plyr internationalization
+  // ==========================================================================
 
   // Skip i18n for abbreviations and brand names
   var resources = {
@@ -259,6 +267,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   };
 
+  // ==========================================================================
+  // Plyr Captions
+  // TODO: Create as class
   // ==========================================================================
 
   var captions = {
@@ -938,6 +949,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }();
 
   // ==========================================================================
+  // Animation utils
+  // ==========================================================================
 
   var transitionEndEvent = function () {
     var element = document.createElement('span');
@@ -984,6 +997,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     isIos: /(iPad|iPhone|iPod)/gi.test(navigator.platform)
   };
 
+  // ==========================================================================
+  // Element utils
   // ==========================================================================
 
   // Wrap an element
@@ -1236,6 +1251,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   // ==========================================================================
+  // Plyr support checks
+  // ==========================================================================
 
   // Default codecs for checking mimetype support
   var defaultCodecs = {
@@ -1333,6 +1350,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     reducedMotion: 'matchMedia' in window && window.matchMedia('(prefers-reduced-motion)').matches
   };
 
+  // ==========================================================================
+  // Event utils
   // ==========================================================================
 
   // Check for passive event listener support
@@ -1490,6 +1509,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   // ==========================================================================
+  // Style utils
+  // ==========================================================================
 
   function validateRatio(input) {
     if (!is$1.array(input) && (!is$1.string(input) || !input.includes(':'))) {
@@ -1570,6 +1591,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     };
   }
 
+  // ==========================================================================
+  // Plyr HTML5 helpers
   // ==========================================================================
 
   var html5 = {
@@ -1710,6 +1733,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   };
 
   // ==========================================================================
+  // Array utils
+  // ==========================================================================
 
   // Remove duplicates in an array
   function dedupe(array) {
@@ -1731,6 +1756,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     });
   }
 
+  // ==========================================================================
+  // Plyr storage
   // ==========================================================================
   var Storage = /*#__PURE__*/function () {
     function Storage(player) {
@@ -1840,6 +1867,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   // ==========================================================================
+  // Sprite loader
+  // ==========================================================================
 
   // Load an external SVG sprite
   function _loadSprite(url, id) {
@@ -1901,6 +1930,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   // ==========================================================================
+  // Time utils
+  // ==========================================================================
 
   // Time helpers
   var getHours = function getHours(value) {
@@ -1943,6 +1974,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     return "".concat(inverted && time > 0 ? '-' : '').concat(hours).concat(format(mins), ":").concat(format(secs));
   }
 
+  // ==========================================================================
+  // Plyr controls
+  // TODO: This needs to be split into smaller files and cleaned up
   // ==========================================================================
 
   // TODO: Don't export a massive object - break down and create class
@@ -3454,6 +3488,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   };
 
   // ==========================================================================
+  // Fullscreen wrapper
+  // https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API#prefixing
+  // https://webkit.org/blog/7929/designing-websites-for-iphone-x/
+  // ==========================================================================
   var Fullscreen = /*#__PURE__*/function () {
     function Fullscreen(player) {
       var _this16 = this;
@@ -3781,6 +3819,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   // ==========================================================================
+  // Plyr UI
+  // ==========================================================================
 
   var ui = {
     addStyleHook: function addStyleHook() {
@@ -4037,6 +4077,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   };
 
+  // ==========================================================================
+  // Plyr Event Listeners
   // ==========================================================================
   var Listeners = /*#__PURE__*/function () {
     function Listeners(player) {
@@ -4893,6 +4935,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   };
 
   // ==========================================================================
+  // Plyr Media
+  // ==========================================================================
 
   var media = {
     // Setup media
@@ -4955,6 +4999,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     _classCallCheck2(this, PreviewThumbnails);
     throw new Error('PreviewThumbnails class is removed!');
   }); // ==========================================================================
+  // Plyr source update
+  // ==========================================================================
   var source = {
     // Add elements to HTML5 media (source, tracks, etc)
     insertElements: function insertElements(type, attributes) {
@@ -5121,6 +5167,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   // ==========================================================================
+  // URL utils
+  // ==========================================================================
 
   /**
    * Parse a string to a URL object
@@ -5142,6 +5190,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }
 
+  // ==========================================================================
+  // Plyr
+  // plyr.js v3.6.4
+  // https://github.com/sampotts/plyr
+  // License: The MIT License (MIT)
   // ==========================================================================
 
   // Private properties
