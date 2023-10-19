@@ -5,5 +5,5 @@
 module.exports = {
   compact: false,
   presets: ['@babel/preset-env'],
-  plugins: ['@babel/plugin-proposal-class-properties']
+  plugins: ['@babel/plugin-transform-class-properties']
 }
