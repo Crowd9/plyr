@@ -52,7 +52,7 @@
     "postcss": "^8.4.31",
     "postcss-custom-properties": "13.3.2",
     "postcss-safe-important": "^1.2.1",
-    "rollup": "^3.26.0",
+    "rollup": "^4.1.4",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0"
   },
